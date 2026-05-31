@@ -1,73 +1,68 @@
-# React + TypeScript + Vite
+# AutoWash Pro Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AutoWash Pro is a customer-facing web app for car wash booking, loyalty points, promotions, and the client dashboard experience.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS v4
+- shadcn-compatible UI components
+- lucide-react icons
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
+npm run build
+npm run typecheck
+npm run lint
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Routes
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Routes are defined in `src/app/routes.ts` and rendered by `src/app/router.tsx`.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Path | Purpose |
+| --- | --- |
+| `/` | Public landing page |
+| `/login` | Customer login |
+| `/register` | Customer registration |
+| `/otp` | OTP confirmation |
+| `/dashboard` | Customer home dashboard after login |
+| `/test` | Development route index for opening all screens quickly |
+
+`/dashboard` is intentionally not protected yet. A TODO auth guard is left in `src/app/router.tsx`; enable it when backend/session auth is ready.
+
+## Project Structure
+
+```text
+src/
+  app/                  Route definitions, router, app-level notes
+  assets/               Local images used by pages
+  components/
+    dashboard/          Client dashboard sections
+    layout/             Shared headers and footer
+    marketing/          Landing/auth marketing components
+    ui/                 shadcn-compatible base UI components
+  data/                 Static page data and menu/promotion config
+  layouts/              Shared page layout wrappers
+  lib/                  Shared utilities
+  pages/                Route-level pages
 ```
+
+## UI Notes
+
+- Design tokens live in `src/App.css`.
+- Use Tailwind utility classes for layout and page styling.
+- Reusable primitives should go in `src/components/ui`.
+- Route-level screens should stay in `src/pages`.
+- Static copy, menu items, and promotion data should stay in `src/data` so components remain easy to reuse.
+
+## Development Notes
+
+- Use `/test` during development to jump between screens without typing URLs.
+- The current router uses the browser History API to avoid adding a router dependency before package installation is available. It can be replaced later with `react-router-dom` without changing page ownership.
+- Local dashboard promotion images were created from the provided design screenshot and are stored in `src/assets`.
