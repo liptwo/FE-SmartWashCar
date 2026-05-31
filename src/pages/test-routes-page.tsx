@@ -34,6 +34,11 @@ const testRoutes: Array<{
     path: routes.dashboard,
     description: 'Trang home dashboard sau đăng nhập.',
   },
+  {
+    label: 'Admin Dashboard',
+    path: routes.admin,
+    description: 'Trang tổng quan hệ thống dành cho role admin.',
+  },
 ]
 
 export function TestRoutesPage() {

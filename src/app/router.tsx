@@ -7,9 +7,10 @@ import {
   useState,
   type AnchorHTMLAttributes,
   type MouseEvent,
-  type ReactNode
+  type ReactNode,
 } from 'react'
 import { MainLayout } from '@/layouts/main-layout'
+import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AuthPage } from '@/pages/auth-page'
 import { ClientDashboardPage } from '@/pages/client-dashboard-page'
 import { HomePage } from '@/pages/home-page'
@@ -49,14 +50,14 @@ export function AppRouter() {
         window.history.pushState(null, '', to)
         setPath(to)
         window.scrollTo({ top: 0, behavior: 'smooth' })
-      }
+      },
     }),
-    [path]
+    [path],
   )
 
   return (
     <RouterContext.Provider value={value}>
-      {path === routes.dashboard ? (
+      {path === routes.dashboard || path === routes.admin ? (
         renderRoute(path)
       ) : (
         <MainLayout>{renderRoute(path)}</MainLayout>
@@ -69,6 +70,8 @@ function renderRoute(path: AppPath) {
   // TODO(auth): Khi backend/session sẵn sàng, bật guard này để chặn user chưa đăng nhập:
   // if (path === routes.dashboard && !authStore.isAuthenticated()) return <Navigate to={routes.login} />
   switch (path) {
+    case routes.admin:
+      return <AdminDashboardPage />
     case routes.dashboard:
       return <ClientDashboardPage />
     case routes.test:
@@ -81,7 +84,7 @@ function renderRoute(path: AppPath) {
       return <OtpPage />
     case routes.home:
     default:
-      return <TestRoutesPage />
+      return <HomePage />
   }
 }
 
@@ -103,7 +106,7 @@ type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
 
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   { children, className, onClick, to, ...props },
-  ref
+  ref,
 ) {
   const { navigate } = useRouter()
 
