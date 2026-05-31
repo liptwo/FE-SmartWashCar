@@ -9,6 +9,8 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react'
+import CustomerManagement from '../components/dashboard/customer-management';
+import RewardsSelection from '../components/dashboard/rewards-selection';
 import { MainLayout } from '@/layouts/main-layout'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AuthPage } from '@/pages/auth-page'
@@ -72,6 +74,10 @@ function renderRoute(path: AppPath) {
   switch (path) {
     case routes.admin:
       return <AdminDashboardPage />
+    case '/admin/customer': 
+      return <CustomerManagement />
+    case '/admin/rewards': 
+      return <RewardsSelection />
     case routes.dashboard:
       return <ClientDashboardPage />
     case routes.test:
