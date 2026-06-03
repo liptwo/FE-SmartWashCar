@@ -13,12 +13,29 @@ const mockCustomers = [
 
 export default function CustomerManagement() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [selectedTierFilter, setSelectedTierFilter] = useState({
+  const [selectedTierFilter, setSelectedTierFilter] = useState<{ [key: string]: boolean }>({
     MEMBER: true, SILVER: true, GOLD: true, PLATINUM: true
   });
+  
+  // 🛠️ THÊM STATE ĐỂ QUẢN LÝ TÌM KIẾM VÀ TABS CHI TIẾT CHẠY REAL-TIME
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'info' | 'vehicles' | 'history'>('info');
 
   // Tìm thông tin khách hàng đang được chọn để xem chi tiết
   const currentCustomer = mockCustomers.find(c => c.id === selectedCustomerId);
+
+  // 🛠️ LOGIC BỘ LỌC CHẠY TỰ ĐỘNG KHÔNG CẦN BACKEND
+  const filteredCustomers = mockCustomers.filter(customer => {
+    // 1. Kiểm tra theo ô tìm kiếm (Không phân biệt hoa thường)
+    const matchesSearch = 
+      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone.replace(/\s+/g, '').includes(searchQuery.replace(/\s+/g, ''));
+    
+    // 2. Kiểm tra theo Checkbox trạng thái thẻ đang tích chọn
+    const matchesTier = selectedTierFilter[customer.tier] === true;
+
+    return matchesSearch && matchesTier;
+  });
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen relative overflow-hidden">
@@ -26,7 +43,9 @@ export default function CustomerManagement() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Quản lý khách hàng</h1>
-          <p className="text-sm text-slate-500">Tổng số: <span className="font-semibold text-slate-700">1,284</span> khách hàng</p>
+          <p className="text-sm text-slate-500">
+            Hiển thị: <span className="font-semibold text-blue-900">{filteredCustomers.length}</span> / {mockCustomers.length} khách hàng mẫu
+          </p>
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
@@ -45,16 +64,18 @@ export default function CustomerManagement() {
           <input 
             type="text" 
             placeholder="Tìm theo tên hoặc số điện thoại..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)} // 🛠️ Cập nhật ký tự tìm kiếm ngay khi gõ
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition"
           />
         </div>
         <div className="flex items-center gap-4 text-sm text-slate-600">
           <span className="font-medium text-slate-500">Hạng thẻ:</span>
           {Object.keys(selectedTierFilter).map((tier) => (
-            <label key={tier} className="flex items-center gap-2 cursor-pointer">
+            <label key={tier} className="flex items-center gap-2 cursor-pointer select-none">
               <input 
                 type="checkbox" 
-                checked={(selectedTierFilter as any)[tier]}
+                checked={selectedTierFilter[tier]}
                 onChange={(e) => setSelectedTierFilter({...selectedTierFilter, [tier]: e.target.checked})}
                 className="rounded border-slate-300 text-blue-900 focus:ring-blue-900 w-4 h-4"
               />
@@ -87,52 +108,73 @@ export default function CustomerManagement() {
               <th className="p-4">Số điện thoại</th>
               <th className="p-4">Hạng</th>
               <th className="p-4">Điểm</th>
-              <th className="p-4">Số lần rửa</th>
+              <th className="p-4 text-center">Số lần rửa</th>
               <th className="p-4">Lần cuối</th>
               <th className="p-4 w-16"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
-            {mockCustomers.map((customer) => (
-              <tr key={customer.id} className="hover:bg-slate-50 transition">
-                <td className="p-4"><input type="checkbox" className="rounded border-slate-300" checked={selectedCustomerId === customer.id} onChange={() => {}} /></td>
-                <td className="p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-sm">
-                    {customer.avatar}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800">{customer.name}</p>
-                    <p className="text-xs text-slate-400">{customer.email}</p>
-                  </div>
-                </td>
-                <td className="p-4 font-medium">{customer.phone}</td>
-                <td className="p-4">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                    customer.tier === 'GOLD' ? 'bg-amber-100 text-amber-700' :
-                    customer.tier === 'PLATINUM' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {customer.tier}
-                  </span>
-                </td>
-                <td className="p-4 font-semibold text-slate-700">{customer.points}</td>
-                <td className="p-4 text-center font-medium">{customer.washes}</td>
-                <td className="p-4 text-slate-500">{customer.lastActive}</td>
-                <td className="p-4">
-                  <button 
-                    onClick={() => setSelectedCustomerId(customer.id)}
-                    className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
+            {filteredCustomers.length > 0 ? (
+              filteredCustomers.map((customer) => (
+                <tr key={customer.id} className={`hover:bg-slate-50 transition ${selectedCustomerId === customer.id ? 'bg-blue-50/50' : ''}`}>
+                  <td className="p-4">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-slate-300" 
+                      checked={selectedCustomerId === customer.id} 
+                      onChange={() => {
+                        setSelectedCustomerId(selectedCustomerId === customer.id ? null : customer.id);
+                        setActiveTab('info'); // Reset tab khi đổi khách hàng
+                      }} 
+                    />
+                  </td>
+                  <td className="p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-sm">
+                      {customer.avatar}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-800">{customer.name}</p>
+                      <p className="text-xs text-slate-400">{customer.email}</p>
+                    </div>
+                  </td>
+                  <td className="p-4 font-medium">{customer.phone}</td>
+                  <td className="p-4">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                      customer.tier === 'GOLD' ? 'bg-amber-100 text-amber-700' :
+                      customer.tier === 'PLATINUM' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {customer.tier}
+                    </span>
+                  </td>
+                  <td className="p-4 font-semibold text-slate-700">{customer.points}</td>
+                  <td className="p-4 text-center font-medium">{customer.washes}</td>
+                  <td className="p-4 text-slate-500">{customer.lastActive}</td>
+                  <td className="p-4">
+                    <button 
+                      onClick={() => {
+                        setSelectedCustomerId(customer.id);
+                        setActiveTab('info');
+                      }}
+                      className={`p-1.5 rounded-lg transition ${selectedCustomerId === customer.id ? 'bg-blue-900 text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={8} className="p-10 text-center text-slate-400 font-medium">
+                  ❌ Không tìm thấy kết quả phù hợp với bộ lọc!
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
 
         {/* PAGINATION */}
         <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>Hiển thị 1 - 10 trên 1,284 khách hàng</span>
+          <span>Hiển thị 1 - {filteredCustomers.length} trên 1,284 khách hàng</span>
           <div className="flex items-center gap-1">
             <button className="p-1 border border-slate-200 rounded hover:bg-slate-50"><ChevronLeft className="w-4 h-4" /></button>
             <button className="px-2.5 py-1 bg-blue-900 text-white font-medium rounded">1</button>
@@ -143,13 +185,13 @@ export default function CustomerManagement() {
         </div>
       </div>
 
-      {/* --- SIDE DETAILS DRAWER (A-03 CHI TIẾT KHÁCH HÀNG - Ảnh 3) --- */}
+      {/* --- SIDE DETAILS DRAWER (A-03 CHI TIẾT KHÁCH HÀNG) --- */}
       {selectedCustomerId && currentCustomer && (
         <>
-          {/* Backdrop làm mờ nền sau giống bản thiết kế */}
           <div className="fixed inset-0 bg-black/20 backdrop-blur-xs z-40" onClick={() => setSelectedCustomerId(null)} />
           
-          <div className="fixed right-0 top-0 h-full w-112.5bg-white shadow-2xl z-50 flex flex-col border-l border-slate-100 animate-in slide-in-from-right duration-200">
+          {/* 🛠️ SỬA LỖI LAYOUT TRƯỢT MƯỢT MÀ CHỖ w-96 HOẶC w-112 */}
+          <div className="fixed right-0 top-0 h-full w-112 bg-white shadow-2xl z-50 flex flex-col border-l border-slate-100 animate-in slide-in-from-right duration-200">
             
             {/* Drawer Header */}
             <div className="p-6 border-b border-slate-100 relative">
@@ -186,86 +228,123 @@ export default function CustomerManagement() {
               </div>
             </div>
 
-            {/* Sub-Tabs Navigation */}
+            {/* Sub-Tabs Navigation (Bấm đổi tab kích hoạt đổi giao diện dưới) */}
             <div className="px-6 border-b border-slate-100 flex gap-4 text-sm font-medium text-slate-400">
-              <button className="py-3 text-blue-900 border-b-2 border-blue-900 font-semibold">Thông tin</button>
-              <button className="py-3 hover:text-slate-600">Xe <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full text-xs">2</span></button>
-              <button className="py-3 hover:text-slate-600">Lịch sử rửa</button>
-              <button className="py-3 hover:text-slate-600">Điểm</button>
-              <button className="py-3 hover:text-slate-600">Booking</button>
+              <button 
+                onClick={() => setActiveTab('info')}
+                className={`py-3 transition-all ${activeTab === 'info' ? 'text-blue-900 border-b-2 border-blue-900 font-semibold' : 'hover:text-slate-600'}`}
+              >
+                Thông tin
+              </button>
+              <button 
+                onClick={() => setActiveTab('vehicles')}
+                className={`py-3 transition-all ${activeTab === 'vehicles' ? 'text-blue-900 border-b-2 border-blue-900 font-semibold' : 'hover:text-slate-600'}`}
+              >
+                Xe <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full text-xs ml-0.5">2</span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('history')}
+                className={`py-3 transition-all ${activeTab === 'history' ? 'text-blue-900 border-b-2 border-blue-900 font-semibold' : 'hover:text-slate-600'}`}
+              >
+                Lịch sử rửa
+              </button>
             </div>
 
             {/* Drawer Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
               
-              {/* Box Chi tiết cá nhân */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Chi tiết cá nhân</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> Email</p>
-                    <p className="font-medium text-slate-700 truncate">{currentCustomer.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Phone className="w-3.5 h-3.5" /> Số điện thoại</p>
-                    <p className="font-medium text-slate-700">{currentCustomer.phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Calendar className="w-3.5 h-3.5" /> Ngày sinh</p>
-                    <p className="font-medium text-slate-700">15/05/1992</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Calendar className="w-3.5 h-3.5" /> Ngày tham gia</p>
-                    <p className="font-medium text-slate-700">20/01/2023</p>
-                  </div>
-                  <div className="col-span-2 border-t border-slate-100 pt-3 mt-1">
-                    <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><MapPin className="w-3.5 h-3.5" /> Địa chỉ</p>
-                    <p className="font-medium text-slate-700 text-xs leading-relaxed">123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chỉ số tổng quan */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
-                  <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><CreditCard className="w-3.5 h-3.5" /> Tổng chi tiêu</p>
-                  <p className="text-xl font-bold text-blue-900">12.5M</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
-                  <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Car className="w-3.5 h-3.5" /> Wash rate</p>
-                  <p className="text-xl font-bold text-green-600">1.5 / tháng</p>
-                </div>
-              </div>
-
-              {/* Phương tiện */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Phương tiện (2)</h4>
-                  <button className="text-xs font-semibold text-blue-900 hover:underline">Xem tất cả</button>
-                </div>
-                
-                <div className="bg-white p-3 rounded-xl border border-slate-200/60 shadow-xs flex justify-between items-center hover:border-slate-300 cursor-pointer transition">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Car className="w-5 h-5" /></div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">51G-123.45</p>
-                      <p className="text-xs text-slate-400">Mercedes-Benz C200 • Black</p>
+              {/* 🛠️ TAB 1: HIỂN THỊ THÔNG TIN CHI TIẾT */}
+              {activeTab === 'info' && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Chi tiết cá nhân</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> Email</p>
+                        <p className="font-medium text-slate-700 truncate">{currentCustomer.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Phone className="w-3.5 h-3.5" /> Số điện thoại</p>
+                        <p className="font-medium text-slate-700">{currentCustomer.phone}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Calendar className="w-3.5 h-3.5" /> Ngày sinh</p>
+                        <p className="font-medium text-slate-700">15/05/1992</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Calendar className="w-3.5 h-3.5" /> Ngày tham gia</p>
+                        <p className="font-medium text-slate-700">20/01/2023</p>
+                      </div>
+                      <div className="col-span-2 border-t border-slate-100 pt-3 mt-1">
+                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><MapPin className="w-3.5 h-3.5" /> Địa chỉ</p>
+                        <p className="font-medium text-slate-700 text-xs leading-relaxed">123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh</p>
+                      </div>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                </div>
 
-                <div className="bg-white p-3 rounded-xl border border-slate-200/60 shadow-xs flex justify-between items-center hover:border-slate-300 cursor-pointer transition">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Car className="w-5 h-5" /></div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">51K-888.88</p>
-                      <p className="text-xs text-slate-400">Toyota Camry • Silver</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
+                      <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><CreditCard className="w-3.5 h-3.5" /> Tổng chi tiêu</p>
+                      <p className="text-xl font-bold text-blue-900">12.5M</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
+                      <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Car className="w-3.5 h-3.5" /> Wash rate</p>
+                      <p className="text-xl font-bold text-green-600">1.5 / tháng</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
                 </div>
-              </div>
+              )}
+
+              {/* 🛠️ TAB 2: HIỂN THỊ PHƯƠNG TIỆN */}
+              {activeTab === 'vehicles' && (
+                <div className="space-y-3 animate-in fade-in duration-200">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Phương tiện đang sử dụng</h4>
+                  </div>
+                  
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/60 shadow-xs flex justify-between items-center hover:border-slate-300 cursor-pointer transition">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Car className="w-5 h-5" /></div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">51G-123.45</p>
+                        <p className="text-xs text-slate-400">Mercedes-Benz C200 • Black</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/60 shadow-xs flex justify-between items-center hover:border-slate-300 cursor-pointer transition">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Car className="w-5 h-5" /></div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">51K-888.88</p>
+                        <p className="text-xs text-slate-400">Toyota Camry • Silver</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </div>
+                </div>
+              )}
+
+              {/* 🛠️ TAB 3: HIỂN THỊ LỊCH SỬ RỬA XE GIẢ ĐỊNH */}
+              {activeTab === 'history' && (
+                <div className="space-y-3 animate-in fade-in duration-200">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lịch sử dịch vụ gần đây</h4>
+                  <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs space-y-3">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-bold text-slate-700">Gói Combo Rửa Premium</span>
+                      <span className="text-green-600 font-semibold">Hoàn thành</span>
+                    </div>
+                    <p className="text-xs text-slate-400">Biển số: 51G-123.45 • 28/05/2026</p>
+                    <div className="border-t border-dashed my-2"></div>
+                    <div className="flex justify-between text-xs">
+                      <span className="font-bold text-slate-700">Dịch vụ Vệ sinh Nội thất</span>
+                      <span className="text-green-600 font-semibold">Hoàn thành</span>
+                    </div>
+                    <p className="text-xs text-slate-400">Biển số: 51G-123.45 • 10/05/2026</p>
+                  </div>
+                </div>
+              )}
 
             </div>
 
