@@ -35,6 +35,7 @@
   --success: #3b6d11;
   --danger: #e24b4a;
   --info: #185fa5;
+  --tertiary: #6f3800;
   --tier-member: #d3d1c7;
   --tier-silver: #b5d4f4;
   --tier-gold: #fac775;
@@ -74,6 +75,7 @@
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-info: var(--info);
+  --color-tertiary: var(--tertiary);
   --color-tier-member: var(--tier-member);
   --color-tier-silver: var(--tier-silver);
   --color-tier-gold: var(--tier-gold);
@@ -113,5 +115,19 @@
 
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 999px;
+    opacity: 0.3;
   }
 }

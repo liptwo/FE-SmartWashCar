@@ -39,6 +39,11 @@ const testRoutes: Array<{
     path: routes.admin,
     description: 'Trang tổng quan hệ thống dành cho role admin.',
   },
+  {
+    label: 'Admin Promotions',
+    path: routes.adminPromotions,
+    description: 'Trang quản lý chương trình khuyến mãi dành cho admin.',
+  },
 ]
 
 export function TestRoutesPage() {

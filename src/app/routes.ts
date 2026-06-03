@@ -1,6 +1,7 @@
 export const routes = {
   home: '/',
   admin: '/admin',
+  adminPromotions: '/admin/promotions',
   dashboard: '/dashboard',
   test: '/test',
   login: '/login',
