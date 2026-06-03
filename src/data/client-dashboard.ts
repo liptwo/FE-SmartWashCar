@@ -12,14 +12,16 @@ import {
   UserCircle,
   type LucideIcon,
 } from 'lucide-react'
+import { routes, type AppPath } from '@/app/routes'
 import promoCeramic from '@/assets/promo-ceramic.png'
 import promoDetail from '@/assets/promo-detail.png'
 import promoInterior from '@/assets/promo-interior.png'
 
 export type DashboardNavItem = {
-  active?: boolean
+  activePath?: AppPath
   icon: LucideIcon
   label: string
+  path: AppPath
 }
 
 export type QuickAction = {
@@ -39,12 +41,12 @@ export type Promotion = {
 }
 
 export const dashboardNavItems: DashboardNavItem[] = [
-  { icon: Home, label: 'Trang chủ', active: true },
-  { icon: CalendarClock, label: 'Đặt lịch' },
-  { icon: Gift, label: 'Điểm thưởng' },
-  { icon: History, label: 'Lịch Sử' },
-  { icon: Car, label: 'Xe của tôi' },
-  { icon: UserCircle, label: 'Hồ sơ' },
+  { activePath: routes.dashboard, icon: Home, label: 'Trang chủ', path: routes.dashboard },
+  { icon: CalendarClock, label: 'Đặt lịch', path: routes.dashboard },
+  { icon: Gift, label: 'Điểm thưởng', path: routes.dashboard },
+  { icon: History, label: 'Lịch sử', path: routes.dashboard },
+  { icon: Car, label: 'Xe của tôi', path: routes.dashboard },
+  { activePath: routes.profile, icon: UserCircle, label: 'Hồ sơ', path: routes.profile },
 ]
 
 export const dashboardLogoutItem = {
@@ -55,7 +57,7 @@ export const dashboardLogoutItem = {
 export const quickActions: QuickAction[] = [
   { icon: CalendarPlus, label: 'Đặt lịch' },
   { icon: Award, label: 'Điểm thưởng' },
-  { icon: ClipboardList, label: 'Lịch Sử' },
+  { icon: ClipboardList, label: 'Lịch sử' },
   { icon: CarFront, label: 'Xe của tôi' },
 ]
 
