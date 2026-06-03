@@ -1,15 +1,16 @@
-import { adminNavItems } from '@/data/admin-dashboard'
+import { adminNavItems, type AdminNavKey } from '@/data/admin-dashboard'
 import { Link } from '@/app/router'
 import { routes, type AppPath } from '@/app/routes'
 import { cn } from '@/lib/utils'
 
 type AdminSidebarProps = {
-  activeItem?: 'dashboard' | 'promotion'
+  activeItem?: AdminNavKey
 }
 
-const navRouteMap: Partial<Record<string, AppPath>> = {
-  Dashboard: routes.admin,
-  Promotion: routes.adminPromotions,
+const navRouteMap: Partial<Record<AdminNavKey, AppPath>> = {
+  dashboard: routes.admin,
+  promotion: routes.adminPromotions,
+  configuration: routes.adminConfiguration,
 }
 
 export function AdminSidebar({ activeItem = 'dashboard' }: AdminSidebarProps) {
@@ -23,14 +24,12 @@ export function AdminSidebar({ activeItem = 'dashboard' }: AdminSidebarProps) {
       <nav className="flex-1 space-y-2">
         {adminNavItems.map((item) => {
           const Icon = item.icon
-          const isActive =
-            (activeItem === 'dashboard' && item.label === 'Dashboard') ||
-            (activeItem === 'promotion' && item.label === 'Promotion')
+          const isActive = activeItem === item.key
           const className = cn(
             'flex w-full items-center gap-4 rounded-lg p-3 text-left text-sm font-medium leading-4 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary',
             isActive && 'border-l-4 border-primary bg-surface-container-low text-primary',
           )
-          const itemRoute = navRouteMap[item.label]
+          const itemRoute = navRouteMap[item.key]
 
           return itemRoute ? (
             <Link className={className} key={item.label} to={itemRoute}>

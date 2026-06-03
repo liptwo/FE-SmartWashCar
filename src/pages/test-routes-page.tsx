@@ -44,6 +44,11 @@ const testRoutes: Array<{
     path: routes.adminPromotions,
     description: 'Trang quản lý chương trình khuyến mãi dành cho admin.',
   },
+  {
+    label: 'Admin Configuration',
+    path: routes.adminConfiguration,
+    description: 'Trang cấu hình tier, điểm thưởng và danh mục đổi thưởng.',
+  },
 ]
 
 export function TestRoutesPage() {

@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { MainLayout } from '@/layouts/main-layout'
+import { AdminConfigurationPage } from '@/pages/admin-configuration-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminPromotionsPage } from '@/pages/admin-promotions-page'
 import { AuthPage } from '@/pages/auth-page'
@@ -58,7 +59,10 @@ export function AppRouter() {
 
   return (
     <RouterContext.Provider value={value}>
-      {path === routes.dashboard || path === routes.admin || path === routes.adminPromotions ? (
+      {path === routes.dashboard ||
+      path === routes.admin ||
+      path === routes.adminPromotions ||
+      path === routes.adminConfiguration ? (
         renderRoute(path)
       ) : (
         <MainLayout>{renderRoute(path)}</MainLayout>
@@ -71,6 +75,8 @@ function renderRoute(path: AppPath) {
   // TODO(auth): Khi backend/session sẵn sàng, bật guard này để chặn user chưa đăng nhập:
   // if (path === routes.dashboard && !authStore.isAuthenticated()) return <Navigate to={routes.login} />
   switch (path) {
+    case routes.adminConfiguration:
+      return <AdminConfigurationPage />
     case routes.adminPromotions:
       return <AdminPromotionsPage />
     case routes.admin:

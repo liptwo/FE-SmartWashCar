@@ -34,6 +34,7 @@
   --warning: #ba7517;
   --success: #3b6d11;
   --danger: #e24b4a;
+  --error: #ba1a1a;
   --info: #185fa5;
   --tertiary: #6f3800;
   --tier-member: #d3d1c7;
@@ -74,6 +75,7 @@
   --color-warning: var(--warning);
   --color-success: var(--success);
   --color-danger: var(--danger);
+  --color-error: var(--error);
   --color-info: var(--info);
   --color-tertiary: var(--tertiary);
   --color-tier-member: var(--tier-member);
