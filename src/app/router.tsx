@@ -59,7 +59,7 @@ export function AppRouter() {
 
   return (
     <RouterContext.Provider value={value}>
-      {path === routes.dashboard || path === routes.admin ? (
+      {path === routes.dashboard || path === routes.admin || path === routes.customer || path === routes.rewards ? (
         renderRoute(path)
       ) : (
         <MainLayout>{renderRoute(path)}</MainLayout>
