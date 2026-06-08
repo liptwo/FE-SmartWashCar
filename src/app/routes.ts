@@ -6,6 +6,8 @@ export const routes = {
   adminConfiguration: '/admin/configuration',
   adminPromotions: '/admin/promotions',
   dashboard: '/dashboard',
+  profile: '/profile',
+  vehicles: '/vehicles',
   test: '/test',
   login: '/login',
   register: '/register',

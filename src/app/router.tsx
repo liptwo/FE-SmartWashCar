@@ -17,6 +17,8 @@ import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminPromotionsPage } from '@/pages/admin-promotions-page'
 import { AuthPage } from '@/pages/auth-page'
 import { ClientDashboardPage } from '@/pages/client-dashboard-page'
+import { ClientProfilePage } from '@/pages/client-profile-page'
+import { ClientVehiclesPage } from '@/pages/client-vehicles-page'
 import { HomePage } from '@/pages/home-page'
 import { OtpPage } from '@/pages/otp-page'
 import { TestRoutesPage } from '@/pages/test-routes-page'
@@ -61,7 +63,7 @@ export function AppRouter() {
 
   return (
     <RouterContext.Provider value={value}>
-      {path === routes.dashboard || path === routes.admin || path === routes.customer || path === routes.rewards  ||
+      {path === routes.dashboard || path === routes.admin || path === routes.customer || path === routes.rewards || path === routes.profile || path === routes.vehicles  ||
       path === routes.adminPromotions ||
       path === routes.adminConfiguration ? (
         renderRoute(path)
@@ -88,6 +90,10 @@ function renderRoute(path: AppPath) {
       return <RewardsSelection />
     case routes.dashboard:
       return <ClientDashboardPage />
+    case routes.profile:
+      return <ClientProfilePage />
+    case routes.vehicles:
+      return <ClientVehiclesPage />
     case routes.test:
       return <TestRoutesPage />
     case routes.login:
