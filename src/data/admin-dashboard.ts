@@ -14,9 +14,12 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+export type AdminNavKey = 'dashboard' | 'booking' | 'customers' | 'promotion' | 'configuration' | 'reports' | 'lpr'
+
 export type AdminNavItem = {
   active?: boolean
   icon: LucideIcon
+  key: AdminNavKey
   label: string
 }
 
@@ -38,13 +41,13 @@ export type QueueItem = {
 }
 
 export const adminNavItems: AdminNavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', active: true },
-  { icon: CalendarDays, label: 'Booking' },
-  { icon: Users, label: 'Khách hàng' },
-  { icon: Tag, label: 'Promotion' },
-  { icon: Settings, label: 'Cấu hình' },
-  { icon: BarChart3, label: 'Báo cáo' },
-  { icon: Camera, label: 'LPR' },
+  { key: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', active: true },
+  { key: 'booking', icon: CalendarDays, label: 'Booking' },
+  { key: 'customers', icon: Users, label: 'Khách hàng' },
+  { key: 'promotion', icon: Tag, label: 'Promotion' },
+  { key: 'configuration', icon: Settings, label: 'Configuration' },
+  { key: 'reports', icon: BarChart3, label: 'Reports' },
+  { key: 'lpr', icon: Camera, label: 'LPR' },
 ]
 
 export const adminMetrics: AdminMetric[] = [

@@ -20,5 +20,8 @@ Current routes:
 - `/otp`: OTP confirmation.
 - `/dashboard`: client home dashboard after login.
 - `/test`: development route index for quickly opening every screen.
+- `/admin`: admin system dashboard.
+- `/admin/promotions`: admin promotion management.
+- `/admin/configuration`: admin tier, point, and reward configuration.
 
 The dashboard route intentionally does not block unauthenticated users yet. A TODO guard comment is left in `router.tsx`; when auth/session handling is ready, enable that guard to redirect unauthenticated users to `/login`.

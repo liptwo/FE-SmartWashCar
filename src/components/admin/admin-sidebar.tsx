@@ -1,7 +1,21 @@
-import { adminNavItems } from '@/data/admin-dashboard'
+import { adminNavItems, type AdminNavKey } from '@/data/admin-dashboard'
+import { Link } from '@/app/router'
+import { routes, type AppPath } from '@/app/routes'
 import { cn } from '@/lib/utils'
+import { Link } from '@/app/router';
+import { routes } from '@/app/routes';
 
-export function AdminSidebar() {
+type AdminSidebarProps = {
+  activeItem?: AdminNavKey
+}
+
+const navRouteMap: Partial<Record<AdminNavKey, AppPath>> = {
+  dashboard: routes.admin,
+  promotion: routes.adminPromotions,
+  configuration: routes.adminConfiguration,
+}
+
+export function AdminSidebar({ activeItem = 'dashboard' }: AdminSidebarProps) {
   return (
     <aside className="fixed left-0 top-0 z-50 hidden h-full w-64 flex-col border-r border-border bg-surface px-4 py-6 lg:flex">
       <div className="mb-10 px-3">
@@ -12,19 +26,32 @@ export function AdminSidebar() {
       <nav className="flex-1 space-y-2">
         {adminNavItems.map((item) => {
           const Icon = item.icon
+          const isActive = activeItem === item.key
+          const className = cn(
+            'flex w-full items-center gap-4 rounded-lg p-3 text-left text-sm font-medium leading-4 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary',
+            isActive && 'border-l-4 border-primary bg-surface-container-low text-primary',
+          )
+          const itemRoute = navRouteMap[item.key]
+
+          //  Tự động nhận diện đường dẫn dựa vào tên nút bấm (label)
+          let targetPath = routes.admin as any; 
+          if (item.label === 'Khách hàng') targetPath = routes.customer;
+          if (item.label === 'Dashboard') targetPath = routes.admin;
+          // (Sau này làm trang nào thì chỉ cần thêm ở đây)
 
           return (
-            <button
+            /*  Sửa từ thẻ <button> thành thẻ <Link> và truyền targetPath vào */
+            <Link
+              to={targetPath}
               className={cn(
                 'flex w-full items-center gap-4 rounded-lg p-3 text-left text-sm font-medium leading-4 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary',
                 item.active && 'border-l-4 border-primary bg-surface-container-low text-primary',
               )}
               key={item.label}
-              type="button"
             >
               <Icon aria-hidden="true" size={22} />
               {item.label}
-            </button>
+            </Link>
           )
         })}
       </nav>
