@@ -32,6 +32,9 @@ Routes are defined in `src/app/routes.ts` and rendered by `src/app/router.tsx`.
 | `/register` | Customer registration |
 | `/otp` | OTP confirmation |
 | `/dashboard` | Customer home dashboard after login |
+| `/admin` | Admin system dashboard |
+| `/admin/promotions` | Admin promotion management |
+| `/admin/configuration` | Admin tier and reward configuration |
 | `/test` | Development route index for opening all screens quickly |
 
 `/dashboard` is intentionally not protected yet. A TODO auth guard is left in `src/app/router.tsx`; enable it when backend/session auth is ready.

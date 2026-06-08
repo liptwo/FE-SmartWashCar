@@ -3,6 +3,8 @@ export const routes = {
   admin: '/admin',
   customer: '/admin/customer',
   rewards: '/admin/rewards',
+  adminConfiguration: '/admin/configuration',
+  adminPromotions: '/admin/promotions',
   dashboard: '/dashboard',
   test: '/test',
   login: '/login',
