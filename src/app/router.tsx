@@ -9,6 +9,8 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react'
+import CustomerManagement from '../components/dashboard/customer-management';
+import RewardsSelection from '../components/dashboard/rewards-selection';
 import { MainLayout } from '@/layouts/main-layout'
 import { AdminConfigurationPage } from '@/pages/admin-configuration-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
@@ -59,8 +61,7 @@ export function AppRouter() {
 
   return (
     <RouterContext.Provider value={value}>
-      {path === routes.dashboard ||
-      path === routes.admin ||
+      {path === routes.dashboard || path === routes.admin || path === routes.customer || path === routes.rewards  ||
       path === routes.adminPromotions ||
       path === routes.adminConfiguration ? (
         renderRoute(path)
@@ -81,6 +82,10 @@ function renderRoute(path: AppPath) {
       return <AdminPromotionsPage />
     case routes.admin:
       return <AdminDashboardPage />
+    case '/admin/customer': 
+      return <CustomerManagement />
+    case '/admin/rewards': 
+      return <RewardsSelection />
     case routes.dashboard:
       return <ClientDashboardPage />
     case routes.test:

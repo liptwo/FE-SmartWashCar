@@ -1,6 +1,8 @@
 import { dashboardLogoutItem, dashboardNavItems } from '@/data/client-dashboard'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { Link } from '@/app/router';
+import { routes } from '@/app/routes';
 
 export function ClientSidebar() {
   const LogoutIcon = dashboardLogoutItem.icon
@@ -16,18 +18,29 @@ export function ClientSidebar() {
         {dashboardNavItems.map((item) => {
           const Icon = item.icon
 
+          // Tự động nhận diện đường dẫn dựa vào tên nút bấm (label) bên phía Khách hàng
+          let targetPath = routes.dashboard as any;
+
+          if (item.label === 'Điểm thưởng' || item.label === 'Rewards') {
+            targetPath = routes.rewards;
+          }
+          if (item.label === 'Trang chủ' || item.label === 'Home') {
+            targetPath = routes.dashboard;
+          }
+          // (Sau này làm các mục như History, My Vehicles thì thêm điều kiện ở đây)
+
           return (
-            <button
+            <Link
+              to={targetPath}
               className={cn(
                 'flex w-full items-center gap-3 px-5 py-3 text-left text-sm font-medium leading-4 text-on-surface-variant transition-colors hover:bg-surface-container-low',
                 item.active && 'border-l-4 border-primary bg-surface-container-low pl-4 text-primary',
               )}
               key={item.label}
-              type="button"
             >
               <Icon aria-hidden="true" size={20} />
               {item.label}
-            </button>
+            </Link>
           )
         })}
       </nav>

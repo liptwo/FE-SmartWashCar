@@ -2,6 +2,8 @@ import { adminNavItems, type AdminNavKey } from '@/data/admin-dashboard'
 import { Link } from '@/app/router'
 import { routes, type AppPath } from '@/app/routes'
 import { cn } from '@/lib/utils'
+import { Link } from '@/app/router';
+import { routes } from '@/app/routes';
 
 type AdminSidebarProps = {
   activeItem?: AdminNavKey
@@ -31,20 +33,25 @@ export function AdminSidebar({ activeItem = 'dashboard' }: AdminSidebarProps) {
           )
           const itemRoute = navRouteMap[item.key]
 
-          return itemRoute ? (
-            <Link className={className} key={item.label} to={itemRoute}>
-              <Icon aria-hidden="true" size={22} />
-              {item.label}
-            </Link>
-          ) : (
-            <button
-              className={className}
+          //  Tự động nhận diện đường dẫn dựa vào tên nút bấm (label)
+          let targetPath = routes.admin as any; 
+          if (item.label === 'Khách hàng') targetPath = routes.customer;
+          if (item.label === 'Dashboard') targetPath = routes.admin;
+          // (Sau này làm trang nào thì chỉ cần thêm ở đây)
+
+          return (
+            /*  Sửa từ thẻ <button> thành thẻ <Link> và truyền targetPath vào */
+            <Link
+              to={targetPath}
+              className={cn(
+                'flex w-full items-center gap-4 rounded-lg p-3 text-left text-sm font-medium leading-4 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-primary',
+                item.active && 'border-l-4 border-primary bg-surface-container-low text-primary',
+              )}
               key={item.label}
-              type="button"
             >
               <Icon aria-hidden="true" size={22} />
               {item.label}
-            </button>
+            </Link>
           )
         })}
       </nav>
