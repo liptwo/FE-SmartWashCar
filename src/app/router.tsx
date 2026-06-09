@@ -7,19 +7,22 @@ import {
   useState,
   type AnchorHTMLAttributes,
   type MouseEvent,
-  type ReactNode,
+  type ReactNode
 } from 'react'
-import CustomerManagement from '../components/dashboard/customer-management';
-import RewardsSelection from '../components/dashboard/rewards-selection';
+import { AdminCustomerPage } from '@/pages/admin-customer-page'
+import { AdminRewardsPage } from '@/pages/admin-rewards-page'
 import { MainLayout } from '@/layouts/main-layout'
 import { AdminConfigurationPage } from '@/pages/admin-configuration-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
+import { AdminBookingsPage } from '@/pages/admin-bookings-page'
 import { AdminPromotionsPage } from '@/pages/admin-promotions-page'
 import { AuthPage } from '@/pages/auth-page'
+import { BookingPage } from '@/pages/booking-page'
 import { ClientDashboardPage } from '@/pages/client-dashboard-page'
 import { ClientProfilePage } from '@/pages/client-profile-page'
 import { ClientVehiclesPage } from '@/pages/client-vehicles-page'
 import { HomePage } from '@/pages/home-page'
+import { LoyaltyPage } from '@/pages/loyalty-page'
 import { OtpPage } from '@/pages/otp-page'
 import { TestRoutesPage } from '@/pages/test-routes-page'
 import { isAppPath, routes, type AppPath } from './routes'
@@ -56,14 +59,18 @@ export function AppRouter() {
         window.history.pushState(null, '', to)
         setPath(to)
         window.scrollTo({ top: 0, behavior: 'smooth' })
-      },
+      }
     }),
-    [path],
+    [path]
   )
 
   return (
     <RouterContext.Provider value={value}>
-      {path === routes.dashboard || path === routes.admin || path === routes.customer || path === routes.rewards || path === routes.profile || path === routes.vehicles  ||
+      {path === routes.dashboard ||
+      path === routes.admin ||
+      path === routes.adminBookings ||
+      path === routes.customer ||
+      path === routes.rewards ||
       path === routes.adminPromotions ||
       path === routes.adminConfiguration ? (
         renderRoute(path)
@@ -82,12 +89,18 @@ function renderRoute(path: AppPath) {
       return <AdminConfigurationPage />
     case routes.adminPromotions:
       return <AdminPromotionsPage />
+    case routes.adminBookings:
+      return <AdminBookingsPage />
     case routes.admin:
       return <AdminDashboardPage />
-    case '/admin/customer': 
-      return <CustomerManagement />
-    case '/admin/rewards': 
-      return <RewardsSelection />
+    case routes.customer:
+      return <AdminCustomerPage />
+    case routes.rewards:
+      return <AdminRewardsPage />
+    case routes.booking:
+      return <BookingPage onBookingSuccess={() => {}} />
+    case routes.loyalty:
+      return <LoyaltyPage />
     case routes.dashboard:
       return <ClientDashboardPage />
     case routes.profile:
@@ -126,7 +139,7 @@ type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
 
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   { children, className, onClick, to, ...props },
-  ref,
+  ref
 ) {
   const { navigate } = useRouter()
 

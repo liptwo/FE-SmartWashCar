@@ -1,9 +1,15 @@
+// ==========================================
+// MOCK DATA - FE-SmartWashCar
+// ==========================================
+
+// --- VEHICLES ---
 export interface Vehicle {
     id: string;
     plate: string;
     model: string;
 }
 
+// --- SERVICES ---
 export interface ServiceItem {
     id: string;
     name: string;
@@ -13,6 +19,7 @@ export interface ServiceItem {
     iconName: string;
 }
 
+// --- LOYALTY ---
 export interface LoyaltyHistoryItem {
     id: string;
     title: string;
@@ -21,6 +28,7 @@ export interface LoyaltyHistoryItem {
     type: 'earn' | 'redeem' | 'expire';
 }
 
+// --- BOOKINGS ---
 export interface Booking {
     id: string;
     customerName: string;

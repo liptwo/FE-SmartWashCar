@@ -49,6 +49,31 @@ const testRoutes: Array<{
     path: routes.adminConfiguration,
     description: 'Trang cấu hình tier, điểm thưởng và danh mục đổi thưởng.',
   },
+  {
+    label: 'Admin Bookings',
+    path: routes.adminBookings,
+    description: 'Trang quản lý booking của Admin.',
+  },
+  {
+    label: 'Admin Customers',
+    path: routes.customer,
+    description: 'Trang quản lý khách hàng của Admin.',
+  },
+  {
+    label: 'Admin Rewards',
+    path: routes.rewards,
+    description: 'Trang quản lý/đổi thưởng của Admin.',
+  },
+  {
+    label: 'Client Booking',
+    path: routes.booking,
+    description: 'Trang đặt lịch dịch vụ của khách hàng.',
+  },
+  {
+    label: 'Client Loyalty',
+    path: routes.loyalty,
+    description: 'Trang điểm thưởng và lịch sử ưu đãi.',
+  },
 ]
 
 export function TestRoutesPage() {

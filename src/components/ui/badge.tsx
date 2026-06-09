@@ -1,13 +1,13 @@
 import React from "react";
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/utils";
 
-interface BadgeProps {
+export interface BadgeProps {
     children: React.ReactNode;
     variant?: 'member' | 'silver' | 'gold' | 'platinum' | 'pending' | 'confirmed' | 'in_progress' | 'done' | 'cancelled' | 'default';
     className?: string;
 }
 
-export default function Badge({ children, variant = 'default', className }: BadgeProps) {
+export function Badge({ children, variant = 'default', className }: BadgeProps) {
     const baseStyles = "inline-flex items-center px-2 py-0.5 text-[9px] font-bold tracking-wide uppercase rounded-md border-[0.5px] transition-colors";
 
     const variantStyles = {

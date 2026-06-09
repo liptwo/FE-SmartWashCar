@@ -1,6 +1,7 @@
 export const routes = {
   home: '/',
   admin: '/admin',
+  adminBookings: '/admin/bookings',
   customer: '/admin/customer',
   rewards: '/admin/rewards',
   adminConfiguration: '/admin/configuration',
@@ -8,6 +9,8 @@ export const routes = {
   dashboard: '/dashboard',
   profile: '/profile',
   vehicles: '/vehicles',
+  booking: '/booking',
+  loyalty: '/loyalty',
   test: '/test',
   login: '/login',
   register: '/register',

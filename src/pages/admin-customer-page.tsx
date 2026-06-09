@@ -3,6 +3,8 @@ import {
   Search, Download, Plus, Mail, Phone, Calendar, 
   MapPin, Eye, ChevronLeft, ChevronRight, X, CreditCard, Car
 } from 'lucide-react';
+import { AdminSidebar } from '@/components/admin/admin-sidebar'
+import { AdminTopbar } from '@/components/admin/admin-topbar'
 
 // --- MOCK DATA ---
 const mockCustomers = [
@@ -11,7 +13,7 @@ const mockCustomers = [
   { id: 3, name: "Lê Hồng", email: "hongle.car@gmail.com", phone: "098 765 4321", tier: "MEMBER", points: "150", washes: 2, lastActive: "05/10/2023", avatar: "LH" },
 ];
 
-export default function CustomerManagement() {
+export function AdminCustomerPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedTierFilter, setSelectedTierFilter] = useState<{ [key: string]: boolean }>({
     MEMBER: true, SILVER: true, GOLD: true, PLATINUM: true
@@ -38,7 +40,12 @@ export default function CustomerManagement() {
   });
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen relative overflow-hidden">
+    <div className="min-h-screen bg-background text-on-surface relative overflow-hidden">
+      <AdminSidebar activeItem="customers" />
+      <AdminTopbar />
+
+      <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
+        <div className="mx-auto max-w-7xl">
       {/* HEADER SECTION */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -361,6 +368,8 @@ export default function CustomerManagement() {
           </div>
         </>
       )}
+        </div>
+      </main>
     </div>
   );
 }

@@ -42,8 +42,8 @@ export type Promotion = {
 
 export const dashboardNavItems: DashboardNavItem[] = [
   { activePath: routes.dashboard, icon: Home, label: 'Trang chủ', path: routes.dashboard },
-  { icon: CalendarClock, label: 'Đặt lịch', path: routes.dashboard },
-  { icon: Gift, label: 'Điểm thưởng', path: routes.dashboard },
+  { icon: CalendarClock, label: 'Đặt lịch', path: routes.booking },
+  { icon: Gift, label: 'Điểm thưởng', path: routes.loyalty },
   { icon: History, label: 'Lịch sử', path: routes.dashboard },
   { activePath: routes.vehicles, icon: Car, label: 'Xe của tôi', path: routes.vehicles },
   { activePath: routes.profile, icon: UserCircle, label: 'Hồ sơ', path: routes.profile },

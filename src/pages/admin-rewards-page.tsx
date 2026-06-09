@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { AdminSidebar } from '@/components/admin/admin-sidebar'
+import { AdminTopbar } from '@/components/admin/admin-topbar'
 
-export default function RewardsSelection() {
+export function AdminRewardsPage() {
   // 1. Tạo state giả lập số điểm hiện tại để khi đổi quà điểm sẽ tự trừ trực quan!
   const [currentPoints, setCurrentPoints] = useState(1240)
   const [selectedReward, setSelectedReward] = useState<any | null>(null)
@@ -28,7 +30,12 @@ export default function RewardsSelection() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background text-on-surface">
+      <AdminSidebar activeItem="promotion" />
+      <AdminTopbar />
+
+      <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
+        <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header số điểm */}
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border">
         <div>
@@ -86,6 +93,8 @@ export default function RewardsSelection() {
           </div>
         </div>
       )}
+        </div>
+      </main>
     </div>
   )
 }
