@@ -2,7 +2,6 @@ import { Link, useRouter } from '@/app/router'
 import { Button } from '@/components/ui/button'
 import { dashboardLogoutItem, dashboardNavItems } from '@/data/client-dashboard'
 import { cn } from '@/lib/utils'
-import { Link } from '@/app/router';
 import { routes } from '@/app/routes';
 
 export function ClientSidebar() {
@@ -42,7 +41,6 @@ export function ClientSidebar() {
                 isActive && 'border-l-4 border-primary bg-surface-container-low pl-4 text-primary',
               )}
               key={item.label}
-              to={item.path}
             >
               <Icon aria-hidden="true" size={20} />
               {item.label}

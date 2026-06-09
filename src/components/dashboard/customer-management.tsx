@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   Search, Download, Plus, Mail, Phone, Calendar, 
-  MapPin, Eye, ChevronLeft, ChevronRight, X, CreditCard, Car
+  MapPin, Eye, ChevronLeft, ChevronRight, X, CreditCard, Car, Award, RefreshCw
 } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -17,9 +17,10 @@ export default function CustomerManagement() {
     MEMBER: true, SILVER: true, GOLD: true, PLATINUM: true
   });
   
-  // 🛠️ THÊM STATE ĐỂ QUẢN LÝ TÌM KIẾM VÀ TABS CHI TIẾT CHẠY REAL-TIME
+  // STATE QUẢN LÝ TÌM KIẾM VÀ TABS CHI TIẾT
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'info' | 'vehicles' | 'history'>('info');
+  const [selectedReward, setSelectedReward] = useState('50');
 
   // Tìm thông tin khách hàng đang được chọn để xem chi tiết
   const currentCustomer = mockCustomers.find(c => c.id === selectedCustomerId);
@@ -65,7 +66,7 @@ export default function CustomerManagement() {
             type="text" 
             placeholder="Tìm theo tên hoặc số điện thoại..." 
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)} // 🛠️ Cập nhật ký tự tìm kiếm ngay khi gõ
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition"
           />
         </div>
@@ -124,7 +125,7 @@ export default function CustomerManagement() {
                       checked={selectedCustomerId === customer.id} 
                       onChange={() => {
                         setSelectedCustomerId(selectedCustomerId === customer.id ? null : customer.id);
-                        setActiveTab('info'); // Reset tab khi đổi khách hàng
+                        setActiveTab('info');
                       }} 
                     />
                   </td>
@@ -185,12 +186,11 @@ export default function CustomerManagement() {
         </div>
       </div>
 
-      {/* --- SIDE DETAILS DRAWER (A-03 CHI TIẾT KHÁCH HÀNG) --- */}
+      {/* --- SIDE DETAILS DRAWER --- */}
       {selectedCustomerId && currentCustomer && (
         <>
           <div className="fixed inset-0 bg-black/20 backdrop-blur-xs z-40" onClick={() => setSelectedCustomerId(null)} />
           
-          {/* 🛠️ SỬA LỖI LAYOUT TRƯỢT MƯỢT MÀ CHỖ w-96 HOẶC w-112 */}
           <div className="fixed right-0 top-0 h-full w-112 bg-white shadow-2xl z-50 flex flex-col border-l border-slate-100 animate-in slide-in-from-right duration-200">
             
             {/* Drawer Header */}
@@ -211,7 +211,7 @@ export default function CustomerManagement() {
                   <h2 className="text-xl font-bold text-slate-800">{currentCustomer.name}</h2>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                      {currentCustomer.tier} MEMBER
+                      {currentCustomer.tier} {/* 🛠️ ĐÃ SỬA LỖI LẶP CHỮ MEMBER Ở ĐÂY */}
                     </span>
                     <span className="text-xs text-slate-400">• {currentCustomer.points} điểm tích lũy</span>
                   </div>
@@ -228,7 +228,7 @@ export default function CustomerManagement() {
               </div>
             </div>
 
-            {/* Sub-Tabs Navigation (Bấm đổi tab kích hoạt đổi giao diện dưới) */}
+            {/* Sub-Tabs Navigation */}
             <div className="px-6 border-b border-slate-100 flex gap-4 text-sm font-medium text-slate-400">
               <button 
                 onClick={() => setActiveTab('info')}
@@ -253,9 +253,9 @@ export default function CustomerManagement() {
             {/* Drawer Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
               
-              {/* 🛠️ TAB 1: HIỂN THỊ THÔNG TIN CHI TIẾT */}
+              {/* TAB 1: HIỂN THỊ THÔNG TIN CHI TIẾT & HỆ THỐNG ĐỔI ĐIỂM */}
               {activeTab === 'info' && (
-                <div className="space-y-6 animate-in fade-in duration-200">
+                <div className="space-y-4 animate-in fade-in duration-200">
                   <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Chi tiết cá nhân</h3>
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -292,10 +292,49 @@ export default function CustomerManagement() {
                       <p className="text-xl font-bold text-green-600">1.5 / tháng</p>
                     </div>
                   </div>
+
+                  {/* 🛠️ TÍCH HỢP HỆ THỐNG ĐỔI ĐIỂM / QUẢN LÝ ĐIỂM TẠI QUẦY CHO ADMIN */}
+                  <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Award className="w-4 h-4 text-blue-900" />
+                      <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Quản lý điểm thưởng tại quầy</h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[11px] text-slate-400 font-medium block mb-1">Chọn gói phần thưởng đổi hộ khách:</label>
+                        <select 
+                          value={selectedReward}
+                          onChange={(e) => setSelectedReward(e.target.value)}
+                          className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:border-blue-500 text-slate-700 transition"
+                        >
+                          <option value="50">Voucher giảm giá 10k VND (Yêu cầu 50 điểm)</option>
+                          <option value="200">Miễn phí dịch vụ Rửa vỏ Basic (Yêu cầu 200 điểm)</option>
+                          <option value="400">Miễn phí Combo Rửa Premium hút bụi (Yêu cầu 400 điểm)</option>
+                        </select>
+                      </div>
+
+                      <div className="flex gap-2 pt-1">
+                        <button 
+                          onClick={() => alert(`[Đổi Quà] Đã trừ ${selectedReward} điểm của khách hàng ${currentCustomer.name} thành công!`)}
+                          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition shadow-xs flex items-center justify-center gap-1"
+                        >
+                          Xác nhận đổi quà
+                        </button>
+                        <button 
+                          onClick={() => alert(`Mở bảng cộng điểm bù/điều chỉnh điểm thủ công cho khách: ${currentCustomer.name}`)}
+                          className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-medium rounded-lg transition flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" /> Điều chỉnh
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               )}
 
-              {/* 🛠️ TAB 2: HIỂN THỊ PHƯƠNG TIỆN */}
+              {/* TAB 2: HIỂN THỊ PHƯƠNG TIỆN */}
               {activeTab === 'vehicles' && (
                 <div className="space-y-3 animate-in fade-in duration-200">
                   <div className="flex justify-between items-center">
@@ -326,7 +365,7 @@ export default function CustomerManagement() {
                 </div>
               )}
 
-              {/* 🛠️ TAB 3: HIỂN THỊ LỊCH SỬ RỬA XE GIẢ ĐỊNH */}
+              {/* TAB 3: HIỂN THỊ LỊCH SỬ RỬA XE */}
               {activeTab === 'history' && (
                 <div className="space-y-3 animate-in fade-in duration-200">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lịch sử dịch vụ gần đây</h4>

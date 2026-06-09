@@ -2,8 +2,6 @@ import { adminNavItems, type AdminNavKey } from '@/data/admin-dashboard'
 import { Link } from '@/app/router'
 import { routes, type AppPath } from '@/app/routes'
 import { cn } from '@/lib/utils'
-import { Link } from '@/app/router';
-import { routes } from '@/app/routes';
 
 type AdminSidebarProps = {
   activeItem?: AdminNavKey
