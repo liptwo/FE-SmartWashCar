@@ -22,10 +22,14 @@ export default function CustomerManagement() {
   const [activeTab, setActiveTab] = useState<'info' | 'vehicles' | 'history'>('info');
   const [selectedReward, setSelectedReward] = useState('50');
 
+  // STATE QUẢN LÝ ẨN/HIỆN MODAL THÊM KHÁCH HÀNG
+  const [isOpenAddModal, setIsOpenAddModal] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '' });
+  
   // Tìm thông tin khách hàng đang được chọn để xem chi tiết
   const currentCustomer = mockCustomers.find(c => c.id === selectedCustomerId);
 
-  // 🛠️ LOGIC BỘ LỌC CHẠY TỰ ĐỘNG KHÔNG CẦN BACKEND
+  // LOGIC BỘ LỌC CHẠY TỰ ĐỘNG KHÔNG CẦN BACKEND
   const filteredCustomers = mockCustomers.filter(customer => {
     // 1. Kiểm tra theo ô tìm kiếm (Không phân biệt hoa thường)
     const matchesSearch = 
@@ -52,7 +56,10 @@ export default function CustomerManagement() {
           <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
             <Download className="w-4 h-4" /> Xuất báo cáo
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition">
+          <button 
+            onClick={() => setIsOpenAddModal(true)} 
+            className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition"
+          >
             <Plus className="w-4 h-4" /> Thêm khách hàng
           </button>
         </div>
@@ -211,7 +218,7 @@ export default function CustomerManagement() {
                   <h2 className="text-xl font-bold text-slate-800">{currentCustomer.name}</h2>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                      {currentCustomer.tier} {/* 🛠️ ĐÃ SỬA LỖI LẶP CHỮ MEMBER Ở ĐÂY */}
+                      {currentCustomer.tier}
                     </span>
                     <span className="text-xs text-slate-400">• {currentCustomer.points} điểm tích lũy</span>
                   </div>
@@ -293,7 +300,7 @@ export default function CustomerManagement() {
                     </div>
                   </div>
 
-                  {/* 🛠️ TÍCH HỢP HỆ THỐNG ĐỔI ĐIỂM / QUẢN LÝ ĐIỂM TẠI QUẦY CHO ADMIN */}
+                  {/* TÍCH HỢP HỆ THỐNG ĐỔI ĐIỂM / QUẢN LÝ ĐIỂM TẠI QUẦY CHO ADMIN */}
                   <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
                     <div className="flex items-center gap-2 mb-3">
                       <Award className="w-4 h-4 text-blue-900" />
@@ -400,6 +407,93 @@ export default function CustomerManagement() {
           </div>
         </>
       )}
+
+      {/* ================= MODAL POPUP THÊM KHÁCH HÀNG MỚI TẠI QUẦY ================= */}
+      {isOpenAddModal && (
+        <>
+          {/* Lớp nền đen mờ phía sau */}
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50" onClick={() => setIsOpenAddModal(false)} />
+          
+          {/* Khung Hộp thoại Modal ở giữa màn hình */}
+          <div className="fixed inset-0 flex items-center justify-center z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-white w-full max-w-md rounded-xl shadow-xl border border-slate-100 overflow-hidden">
+              
+              {/* Tiêu đề Modal */}
+              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 className="font-bold text-slate-800 text-base">Thêm khách hàng mới tại quầy</h3>
+                <button 
+                  onClick={() => setIsOpenAddModal(false)}
+                  className="p-1 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Nội dung các ô nhập liệu Form */}
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 block mb-1">Họ và tên <span className="text-red-500">*</span></label>
+                  <input 
+                    type="text" 
+                    placeholder="Ví dụ: Nguyễn Văn A"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:border-blue-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 block mb-1">Số điện thoại <span className="text-red-500">*</span></label>
+                  <input 
+                    type="text" 
+                    placeholder="Ví dụ: 0987654321"
+                    value={newCustomer.phone}
+                    onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:border-blue-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 block mb-1">Địa chỉ Email</label>
+                  <input 
+                    type="email" 
+                    placeholder="Ví dụ: nva@gmail.com"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:border-blue-500 transition"
+                  />
+                </div>
+              </div>
+
+              {/* Các nút thao tác dưới chân Modal */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 text-sm font-medium">
+                <button 
+                  onClick={() => setIsOpenAddModal(false)}
+                  className="px-4 py-2 border border-slate-200 bg-white text-slate-600 rounded-lg hover:bg-slate-100 transition"
+                >
+                  Hủy bỏ
+                </button>
+                <button 
+                  onClick={() => {
+                    if (!newCustomer.name || !newCustomer.phone) {
+                      alert("Vui lòng điền đầy đủ Họ tên và Số điện thoại!");
+                      return;
+                    }
+                    alert(`[Mock Data] Đã ghi nhận thông tin khách hàng: ${newCustomer.name}. Bước tiếp theo chúng ta sẽ viết API để đẩy dữ liệu này vào database thật!`);
+                    setIsOpenAddModal(false);
+                    setNewCustomer({ name: '', phone: '', email: '' }); // Reset form rỗng
+                  }}
+                  className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition shadow-sm"
+                >
+                  Xác nhận lưu
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </>
+      )}
+
     </div>
   );
 }
