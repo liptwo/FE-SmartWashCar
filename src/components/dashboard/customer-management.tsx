@@ -1,18 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, Download, Plus, Mail, Phone, Calendar, 
   MapPin, Eye, ChevronLeft, ChevronRight, X, CreditCard, Car, Award, RefreshCw
 } from 'lucide-react';
 
-// --- MOCK DATA ---
-const mockCustomers = [
-  { id: 1, name: "Alex Nguyen", email: "alex.n@example.com", phone: "090 123 4567", tier: "GOLD", points: "2,450", washes: 18, lastActive: "Hôm qua, 14:30", avatar: "AN" },
-  { id: 2, name: "Trần Minh", email: "minhtran@outlook.com", phone: "091 888 9999", tier: "PLATINUM", points: "8,120", washes: 42, lastActive: "12/10/2023", avatar: "TM" },
-  { id: 3, name: "Lê Hồng", email: "hongle.car@gmail.com", phone: "098 765 4321", tier: "MEMBER", points: "150", washes: 2, lastActive: "05/10/2023", avatar: "LH" },
-];
+// --- ĐỊNH NGHĨA KIỂU DỮ LIỆU KHÁCH HÀNG THẬT TỪ BACKEND ---
+interface Customer {
+  customerId: string; // Sử dụng chuỗi UUID thay vì number
+  fullName: string;
+  phone: string;
+  email: string;
+  tier: string;
+  totalPoints: number;
+  totalVisits: number;
+  totalSpend: number;
+  registeredAt: string;
+  isActive: boolean;
+}
 
 export default function CustomerManagement() {
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  // Thay thế mock data bằng state lưu trữ danh sách thật từ API
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedTierFilter, setSelectedTierFilter] = useState<{ [key: string]: boolean }>({
     MEMBER: true, SILVER: true, GOLD: true, PLATINUM: true
   });
@@ -26,21 +37,90 @@ export default function CustomerManagement() {
   const [isOpenAddModal, setIsOpenAddModal] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '' });
   
-  // Tìm thông tin khách hàng đang được chọn để xem chi tiết
-  const currentCustomer = mockCustomers.find(c => c.id === selectedCustomerId);
+  // URL gốc của API Backend Spring Boot
+  const API_BASE_URL = 'http://localhost:8080/api/admin/customers';
 
-  // LOGIC BỘ LỌC CHẠY TỰ ĐỘNG KHÔNG CẦN BACKEND
-  const filteredCustomers = mockCustomers.filter(customer => {
-    // 1. Kiểm tra theo ô tìm kiếm (Không phân biệt hoa thường)
+  // 🛠️ HÀM LẤY DANH SÁCH KHÁCH HÀNG THẬT TỪ BACKEND (GET)
+  const fetchCustomers = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(API_BASE_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setCustomers(data);
+      } else {
+        console.error("Lỗi khi lấy danh sách khách hàng từ server");
+      }
+    } catch (error) {
+      console.error("Không thể kết nối đến API Backend:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Tự động gọi API ngay khi cấu phần giao diện được tải lên màn hình
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  // Tìm thông tin khách hàng đang được chọn để xem chi tiết ở Side Drawer
+  const currentCustomer = customers.find(c => c.customerId === selectedCustomerId);
+
+  // 🛠️ HÀM THỰC THI THÊM MỚI KHÁCH HÀNG VÀO DATABASE THẬT (POST)
+  const handleSaveCustomer = async () => {
+    if (!newCustomer.name || !newCustomer.phone) {
+      alert("Vui lòng điền đầy đủ Họ tên và Số điện thoại!");
+      return;
+    }
+
+    try {
+      const response = await fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newCustomer.name,
+          phone: newCustomer.phone,
+          email: newCustomer.email
+        })
+      });
+
+      if (response.ok) {
+        alert(`🎉 Thành công! Đã thêm khách hàng ${newCustomer.name} vào hệ thống.`);
+        setIsOpenAddModal(false);
+        setNewCustomer({ name: '', phone: '', email: '' }); // Đưa form về rỗng
+        fetchCustomers(); // Gọi lại hàm lấy danh sách để cập nhật dữ liệu bảng ngay lập tức
+      } else {
+        const errorMessage = await response.text();
+        alert(`❌ Thất bại: ${errorMessage || "Có lỗi xảy ra khi lưu."}`);
+      }
+    } catch (error) {
+      alert("❌ Lỗi kết nối: Không thể gửi dữ liệu đến server Backend!");
+      console.error(error);
+    }
+  };
+
+  // 🛠️ LOGIC BỘ LỌC TÌM KIẾM TRỰC TIẾP TRÊN DỮ LIỆU THẬT
+  const filteredCustomers = customers.filter(customer => {
     const matchesSearch = 
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.phone.replace(/\s+/g, '').includes(searchQuery.replace(/\s+/g, ''));
+      (customer.fullName && customer.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (customer.phone && customer.phone.replace(/\s+/g, '').includes(searchQuery.replace(/\s+/g, '')));
     
-    // 2. Kiểm tra theo Checkbox trạng thái thẻ đang tích chọn
     const matchesTier = selectedTierFilter[customer.tier] === true;
 
     return matchesSearch && matchesTier;
   });
+
+  // Hàm sinh chữ cái đại diện Avatar từ Tên
+  const getAvatarLetters = (name: string) => {
+    if (!name) return "KH";
+    const words = name.trim().split(" ");
+    if (words.length >= 2) {
+      return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+    }
+    return name.charAt(0).toUpperCase();
+  };
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen relative overflow-hidden">
@@ -49,7 +129,7 @@ export default function CustomerManagement() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Quản lý khách hàng</h1>
           <p className="text-sm text-slate-500">
-            Hiển thị: <span className="font-semibold text-blue-900">{filteredCustomers.length}</span> / {mockCustomers.length} khách hàng mẫu
+            Hiển thị: <span className="font-semibold text-blue-900">{filteredCustomers.length}</span> / {customers.length} khách hàng hệ thống
           </p>
         </div>
         <div className="flex gap-3">
@@ -95,11 +175,8 @@ export default function CustomerManagement() {
 
       {/* BULK ACTIONS BANNER */}
       <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex justify-between items-center mb-4">
-        <span className="text-sm text-blue-900 font-medium">1 mục đã chọn</span>
+        <span className="text-sm text-blue-900 font-medium">Hệ thống đồng bộ dữ liệu đám mây</span>
         <div className="flex gap-2">
-          <button className="px-3 py-1.5 bg-white border border-blue-200 text-blue-900 rounded-md text-xs font-medium hover:bg-blue-100 transition">
-            &gt; Gửi thông báo
-          </button>
           <button className="px-3 py-1.5 bg-white border border-blue-200 text-blue-900 rounded-md text-xs font-medium hover:bg-blue-100 transition">
             Export file CSV
           </button>
@@ -111,38 +188,44 @@ export default function CustomerManagement() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50 text-slate-400 font-semibold text-xs uppercase tracking-wider border-b border-slate-200">
-              <th className="p-4 w-12"><input type="checkbox" className="rounded border-slate-300" defaultChecked /></th>
+              <th className="p-4 w-12"><input type="checkbox" className="rounded border-slate-300" /></th>
               <th className="p-4">Khách hàng</th>
               <th className="p-4">Số điện thoại</th>
               <th className="p-4">Hạng</th>
               <th className="p-4">Điểm</th>
               <th className="p-4 text-center">Số lần rửa</th>
-              <th className="p-4">Lần cuối</th>
+              <th className="p-4">Tổng chi tiêu</th>
               <th className="p-4 w-16"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
-            {filteredCustomers.length > 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={8} className="p-10 text-center text-slate-400 font-medium animate-pulse">
+                  ⏳ Đang tải dữ liệu khách hàng từ database Supabase...
+                </td>
+              </tr>
+            ) : filteredCustomers.length > 0 ? (
               filteredCustomers.map((customer) => (
-                <tr key={customer.id} className={`hover:bg-slate-50 transition ${selectedCustomerId === customer.id ? 'bg-blue-50/50' : ''}`}>
+                <tr key={customer.customerId} className={`hover:bg-slate-50 transition ${selectedCustomerId === customer.customerId ? 'bg-blue-50/50' : ''}`}>
                   <td className="p-4">
                     <input 
                       type="checkbox" 
                       className="rounded border-slate-300" 
-                      checked={selectedCustomerId === customer.id} 
+                      checked={selectedCustomerId === customer.customerId} 
                       onChange={() => {
-                        setSelectedCustomerId(selectedCustomerId === customer.id ? null : customer.id);
+                        setSelectedCustomerId(selectedCustomerId === customer.customerId ? null : customer.customerId);
                         setActiveTab('info');
                       }} 
                     />
                   </td>
                   <td className="p-4 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-sm">
-                      {customer.avatar}
+                      {getAvatarLetters(customer.fullName)}
                     </div>
                     <div>
-                      <p className="font-semibold text-slate-800">{customer.name}</p>
-                      <p className="text-xs text-slate-400">{customer.email}</p>
+                      <p className="font-semibold text-slate-800">{customer.fullName}</p>
+                      <p className="text-xs text-slate-400">{customer.email || "Chưa cập nhật email"}</p>
                     </div>
                   </td>
                   <td className="p-4 font-medium">{customer.phone}</td>
@@ -154,16 +237,18 @@ export default function CustomerManagement() {
                       {customer.tier}
                     </span>
                   </td>
-                  <td className="p-4 font-semibold text-slate-700">{customer.points}</td>
-                  <td className="p-4 text-center font-medium">{customer.washes}</td>
-                  <td className="p-4 text-slate-500">{customer.lastActive}</td>
+                  <td className="p-4 font-semibold text-slate-700">{customer.totalPoints}</td>
+                  <td className="p-4 text-center font-medium">{customer.totalVisits}</td>
+                  <td className="p-4 text-blue-900 font-semibold">
+                    {customer.totalSpend ? customer.totalSpend.toLocaleString('vi-VN') : 0}đ
+                  </td>
                   <td className="p-4">
                     <button 
                       onClick={() => {
-                        setSelectedCustomerId(customer.id);
+                        setSelectedCustomerId(customer.customerId);
                         setActiveTab('info');
                       }}
-                      className={`p-1.5 rounded-lg transition ${selectedCustomerId === customer.id ? 'bg-blue-900 text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                      className={`p-1.5 rounded-lg transition ${selectedCustomerId === customer.customerId ? 'bg-blue-900 text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
                     >
                       <Eye className="w-4 h-4" />
                     </button>
@@ -182,12 +267,10 @@ export default function CustomerManagement() {
 
         {/* PAGINATION */}
         <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>Hiển thị 1 - {filteredCustomers.length} trên 1,284 khách hàng</span>
+          <span>Hiển thị {filteredCustomers.length} khách hàng hợp lệ</span>
           <div className="flex items-center gap-1">
             <button className="p-1 border border-slate-200 rounded hover:bg-slate-50"><ChevronLeft className="w-4 h-4" /></button>
             <button className="px-2.5 py-1 bg-blue-900 text-white font-medium rounded">1</button>
-            <button className="px-2.5 py-1 border border-slate-200 rounded hover:bg-slate-50">2</button>
-            <button className="px-2.5 py-1 border border-slate-200 rounded hover:bg-slate-50">3</button>
             <button className="p-1 border border-slate-200 rounded hover:bg-slate-50"><ChevronRight className="w-4 h-4" /></button>
           </div>
         </div>
@@ -211,16 +294,16 @@ export default function CustomerManagement() {
 
               <div className="flex items-start gap-4 mt-2">
                 <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-xl relative">
-                  {currentCustomer.avatar}
-                  <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></span>
+                  {getAvatarLetters(currentCustomer.fullName)}
+                  <span className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${currentCustomer.isActive ? 'bg-green-500' : 'bg-slate-400'}`}></span>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800">{currentCustomer.name}</h2>
+                  <h2 className="text-xl font-bold text-slate-800">{currentCustomer.fullName}</h2>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
                       {currentCustomer.tier}
                     </span>
-                    <span className="text-xs text-slate-400">• {currentCustomer.points} điểm tích lũy</span>
+                    <span className="text-xs text-slate-400">• {currentCustomer.totalPoints} điểm tích lũy</span>
                   </div>
                 </div>
               </div>
@@ -247,7 +330,7 @@ export default function CustomerManagement() {
                 onClick={() => setActiveTab('vehicles')}
                 className={`py-3 transition-all ${activeTab === 'vehicles' ? 'text-blue-900 border-b-2 border-blue-900 font-semibold' : 'hover:text-slate-600'}`}
               >
-                Xe <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full text-xs ml-0.5">2</span>
+                Xe
               </button>
               <button 
                 onClick={() => setActiveTab('history')}
@@ -268,23 +351,21 @@ export default function CustomerManagement() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Mail className="w-3.5 h-3.5" /> Email</p>
-                        <p className="font-medium text-slate-700 truncate">{currentCustomer.email}</p>
+                        <p className="font-medium text-slate-700 truncate">{currentCustomer.email || "N/A"}</p>
                       </div>
                       <div>
                         <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Phone className="w-3.5 h-3.5" /> Số điện thoại</p>
                         <p className="font-medium text-slate-700">{currentCustomer.phone}</p>
                       </div>
                       <div>
-                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Calendar className="w-3.5 h-3.5" /> Ngày sinh</p>
-                        <p className="font-medium text-slate-700">15/05/1992</p>
+                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Calendar className="w-3.5 h-3.5" /> Ngày tham gia</p>
+                        <p className="font-medium text-slate-700">
+                          {new Date(currentCustomer.registeredAt).toLocaleDateString('vi-VN')}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Calendar className="w-3.5 h-3.5" /> Ngày tham gia</p>
-                        <p className="font-medium text-slate-700">20/01/2023</p>
-                      </div>
-                      <div className="col-span-2 border-t border-slate-100 pt-3 mt-1">
-                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><MapPin className="w-3.5 h-3.5" /> Địa chỉ</p>
-                        <p className="font-medium text-slate-700 text-xs leading-relaxed">123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh</p>
+                        <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><RefreshCw className="w-3.5 h-3.5" /> Trạng thái</p>
+                        <p className="font-medium text-green-600">{currentCustomer.isActive ? "Hoạt động" : "Khóa"}</p>
                       </div>
                     </div>
                   </div>
@@ -292,15 +373,17 @@ export default function CustomerManagement() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
                       <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><CreditCard className="w-3.5 h-3.5" /> Tổng chi tiêu</p>
-                      <p className="text-xl font-bold text-blue-900">12.5M</p>
+                      <p className="text-xl font-bold text-blue-900">
+                        {currentCustomer.totalSpend ? currentCustomer.totalSpend.toLocaleString('vi-VN') : 0}đ
+                      </p>
                     </div>
                     <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
-                      <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Car className="w-3.5 h-3.5" /> Wash rate</p>
-                      <p className="text-xl font-bold text-green-600">1.5 / tháng</p>
+                      <p className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Car className="w-3.5 h-3.5" /> Số lần đến</p>
+                      <p className="text-xl font-bold text-green-600">{currentCustomer.totalVisits} lần</p>
                     </div>
                   </div>
 
-                  {/* TÍCH HỢP HỆ THỐNG ĐỔI ĐIỂM / QUẢN LÝ ĐIỂM TẠI QUẦY CHO ADMIN */}
+                  {/* QUẢN LÝ ĐIỂM THƯỞNG TẠI QUẦY */}
                   <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs">
                     <div className="flex items-center gap-2 mb-3">
                       <Award className="w-4 h-4 text-blue-900" />
@@ -323,13 +406,13 @@ export default function CustomerManagement() {
 
                       <div className="flex gap-2 pt-1">
                         <button 
-                          onClick={() => alert(`[Đổi Quà] Đã trừ ${selectedReward} điểm của khách hàng ${currentCustomer.name} thành công!`)}
+                          onClick={() => alert(`[Đổi Quà] Đã trừ ${selectedReward} điểm của khách hàng ${currentCustomer.fullName} thành công!`)}
                           className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition shadow-xs flex items-center justify-center gap-1"
                         >
                           Xác nhận đổi quà
                         </button>
                         <button 
-                          onClick={() => alert(`Mở bảng cộng điểm bù/điều chỉnh điểm thủ công cho khách: ${currentCustomer.name}`)}
+                          onClick={() => alert(`Mở bảng cộng điểm bù/điều chỉnh điểm thủ công cho khách: ${currentCustomer.fullName}`)}
                           className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-medium rounded-lg transition flex items-center gap-1"
                         >
                           <RefreshCw className="w-3.5 h-3.5" /> Điều chỉnh
@@ -344,31 +427,8 @@ export default function CustomerManagement() {
               {/* TAB 2: HIỂN THỊ PHƯƠNG TIỆN */}
               {activeTab === 'vehicles' && (
                 <div className="space-y-3 animate-in fade-in duration-200">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Phương tiện đang sử dụng</h4>
-                  </div>
-                  
-                  <div className="bg-white p-3 rounded-xl border border-slate-200/60 shadow-xs flex justify-between items-center hover:border-slate-300 cursor-pointer transition">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Car className="w-5 h-5" /></div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">51G-123.45</p>
-                        <p className="text-xs text-slate-400">Mercedes-Benz C200 • Black</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                  </div>
-
-                  <div className="bg-white p-3 rounded-xl border border-slate-200/60 shadow-xs flex justify-between items-center hover:border-slate-300 cursor-pointer transition">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Car className="w-5 h-5" /></div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">51K-888.88</p>
-                        <p className="text-xs text-slate-400">Toyota Camry • Silver</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                  </div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Phương tiện đang sử dụng</h4>
+                  <p className="text-xs text-slate-400 text-center py-4">Dữ liệu xe liên kết đang được đồng bộ...</p>
                 </div>
               )}
 
@@ -376,19 +436,7 @@ export default function CustomerManagement() {
               {activeTab === 'history' && (
                 <div className="space-y-3 animate-in fade-in duration-200">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lịch sử dịch vụ gần đây</h4>
-                  <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs space-y-3">
-                    <div className="flex justify-between text-xs">
-                      <span className="font-bold text-slate-700">Gói Combo Rửa Premium</span>
-                      <span className="text-green-600 font-semibold">Hoàn thành</span>
-                    </div>
-                    <p className="text-xs text-slate-400">Biển số: 51G-123.45 • 28/05/2026</p>
-                    <div className="border-t border-dashed my-2"></div>
-                    <div className="flex justify-between text-xs">
-                      <span className="font-bold text-slate-700">Dịch vụ Vệ sinh Nội thất</span>
-                      <span className="text-green-600 font-semibold">Hoàn thành</span>
-                    </div>
-                    <p className="text-xs text-slate-400">Biển số: 51G-123.45 • 10/05/2026</p>
-                  </div>
+                  <p className="text-xs text-slate-400 text-center py-4">Dữ liệu hóa đơn rửa đang được đồng bộ...</p>
                 </div>
               )}
 
@@ -400,7 +448,7 @@ export default function CustomerManagement() {
                 Vô hiệu hóa
               </button>
               <button className="py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition flex items-center justify-center gap-2">
-                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z'/></svg>" alt="" /> Ghi chú
+                 Ghi chú
               </button>
             </div>
 
@@ -411,14 +459,11 @@ export default function CustomerManagement() {
       {/* ================= MODAL POPUP THÊM KHÁCH HÀNG MỚI TẠI QUẦY ================= */}
       {isOpenAddModal && (
         <>
-          {/* Lớp nền đen mờ phía sau */}
           <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50" onClick={() => setIsOpenAddModal(false)} />
           
-          {/* Khung Hộp thoại Modal ở giữa màn hình */}
           <div className="fixed inset-0 flex items-center justify-center z-50 animate-in fade-in zoom-in-95 duration-150">
             <div className="bg-white w-full max-w-md rounded-xl shadow-xl border border-slate-100 overflow-hidden">
               
-              {/* Tiêu đề Modal */}
               <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 className="font-bold text-slate-800 text-base">Thêm khách hàng mới tại quầy</h3>
                 <button 
@@ -429,7 +474,6 @@ export default function CustomerManagement() {
                 </button>
               </div>
 
-              {/* Nội dung các ô nhập liệu Form */}
               <div className="p-5 space-y-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-600 block mb-1">Họ và tên <span className="text-red-500">*</span></label>
@@ -465,7 +509,6 @@ export default function CustomerManagement() {
                 </div>
               </div>
 
-              {/* Các nút thao tác dưới chân Modal */}
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 text-sm font-medium">
                 <button 
                   onClick={() => setIsOpenAddModal(false)}
@@ -474,15 +517,7 @@ export default function CustomerManagement() {
                   Hủy bỏ
                 </button>
                 <button 
-                  onClick={() => {
-                    if (!newCustomer.name || !newCustomer.phone) {
-                      alert("Vui lòng điền đầy đủ Họ tên và Số điện thoại!");
-                      return;
-                    }
-                    alert(`[Mock Data] Đã ghi nhận thông tin khách hàng: ${newCustomer.name}. Bước tiếp theo chúng ta sẽ viết API để đẩy dữ liệu này vào database thật!`);
-                    setIsOpenAddModal(false);
-                    setNewCustomer({ name: '', phone: '', email: '' }); // Reset form rỗng
-                  }}
+                  onClick={handleSaveCustomer} // Gọi hàm lưu bất đồng bộ kết nối API
                   className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition shadow-sm"
                 >
                   Xác nhận lưu
