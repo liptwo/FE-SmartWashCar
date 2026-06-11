@@ -2,7 +2,6 @@ import {
   Banknote,
   BarChart3,
   CalendarDays,
-  Camera,
   Car,
   LayoutDashboard,
   Package,
@@ -46,8 +45,7 @@ export const adminNavItems: AdminNavItem[] = [
   { key: 'customers', icon: Users, label: 'Khách hàng' },
   { key: 'promotion', icon: Tag, label: 'Promotion' },
   { key: 'configuration', icon: Settings, label: 'Configuration' },
-  { key: 'reports', icon: BarChart3, label: 'Reports' },
-  { key: 'lpr', icon: Camera, label: 'LPR' },
+  { key: 'reports', icon: BarChart3, label: 'Reports' }
 ]
 
 export const adminMetrics: AdminMetric[] = [

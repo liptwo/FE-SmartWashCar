@@ -16,7 +16,7 @@ export function AdminPromotionsPage() {
 
   return (
     <AdminPromotionShell>
-      <div className="mx-auto w-full max-w-[1280px] p-6">
+      <div className="mx-auto w-full max-w-[1280px]">
         <section className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <h1 className="mb-2 text-2xl font-medium leading-8 text-on-surface">Quản lý Khuyến mãi</h1>
@@ -40,7 +40,7 @@ export function AdminPromotionsPage() {
                 </button>
               ))}
             </div>
-            <Button className="gap-2 md:hidden" type="button" onClick={() => setDrawerOpen(true)}>
+            <Button className="gap-2 " type="button" onClick={() => setDrawerOpen(true)}>
               <Plus size={16} />
               Tạo promotion
             </Button>

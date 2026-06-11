@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Badge } from '@/shared/components/ui/badge'
+import { Button } from '@/shared/components/ui/button'
 import { AdminSidebar } from '@/features/admin/components/admin-sidebar'
 import { AdminTopbar } from '@/features/admin/components/admin-topbar'
 import { bookingsData, type Booking } from '@/shared/data/mockData'
@@ -171,7 +172,21 @@ export function AdminBookingsPage() {
   return (
     <div className="min-h-screen bg-background text-on-surface">
       <AdminSidebar activeItem="booking" />
-      <AdminTopbar />
+      <AdminTopbar
+        searchPlaceholder="Tìm kiếm booking..."
+        searchValue={searchText}
+        onSearchChange={setSearchText}
+        actions={
+          <Button
+            className="h-10 gap-2 px-4 bg-primary text-on-primary hover:opacity-90"
+            type="button"
+            onClick={() => setIsNewBookingOpen(true)}
+          >
+            <Plus size={16} />
+            Booking Mới
+          </Button>
+        }
+      />
 
       <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
         <div className="mx-auto max-w-7xl">

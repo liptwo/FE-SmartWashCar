@@ -1,5 +1,6 @@
-import { Bell, CircleHelp, Save } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { AdminSidebar } from '@/features/admin/components/admin-sidebar'
+import { AdminTopbar } from '@/features/admin/components/admin-topbar'
 import { PointRateCard, RewardCatalog } from '@/features/admin/components/reward-catalog'
 import { TierRuleCard } from '@/features/admin/components/tier-rule-card'
 import { Button } from '@/shared/components/ui/button'
@@ -9,20 +10,9 @@ export function AdminConfigurationPage() {
   return (
     <div className="min-h-screen bg-background text-on-surface">
       <AdminSidebar activeItem="configuration" />
+      <AdminTopbar title="Cấu hình hệ thống" showSearch={false} actions={null} />
 
       <div className="min-h-screen pb-24 lg:ml-64">
-        <header className="fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-outline-variant bg-surface px-6 lg:left-64">
-          <h1 className="text-xl font-medium leading-7 text-primary">Cấu hình hệ thống</h1>
-          <div className="flex items-center gap-6">
-            <button className="relative text-on-surface-variant hover:text-primary" type="button" aria-label="Thông báo">
-              <Bell size={22} />
-              <span className="absolute -right-1 -top-1 size-2 rounded-full bg-error" />
-            </button>
-            <button className="text-on-surface-variant hover:text-primary" type="button" aria-label="Trợ giúp">
-              <CircleHelp size={22} />
-            </button>
-          </div>
-        </header>
 
         <main className="mx-auto grid max-w-[1280px] grid-cols-12 gap-6 px-6 pt-24">
           <section className="col-span-12 space-y-4 lg:col-span-7">

@@ -16,6 +16,7 @@ import { AdminConfigurationPage } from '@/features/admin/pages/admin-configurati
 import { AdminDashboardPage } from '@/features/admin/pages/admin-dashboard-page'
 import { AdminBookingsPage } from '@/features/admin/pages/admin-bookings-page'
 import { AdminPromotionsPage } from '@/features/admin/pages/admin-promotions-page'
+import { AdminReportsPage } from '@/features/admin/pages/admin-reports-page'
 import { AuthPage } from '@/features/auth/pages/auth-page'
 import { BookingPage } from '@/features/booking/pages/booking-page'
 import { ClientDashboardPage } from '@/features/client/pages/client-dashboard-page'
@@ -80,6 +81,7 @@ export function AppRouter() {
       path === routes.customer ||
       path === routes.rewards ||
       path === routes.adminPromotions ||
+      path === routes.adminReports ||
       path === routes.adminConfiguration ? (
         renderRoute(path)
       ) : (
@@ -97,6 +99,8 @@ function renderRoute(path: AppPath) {
       return <AdminConfigurationPage />
     case routes.adminPromotions:
       return <AdminPromotionsPage />
+    case routes.adminReports:
+      return <AdminReportsPage />
     case routes.adminBookings:
       return <AdminBookingsPage />
     case routes.admin:

@@ -42,7 +42,12 @@ export function AdminCustomerPage() {
   return (
     <div className="min-h-screen bg-background text-on-surface relative overflow-hidden">
       <AdminSidebar activeItem="customers" />
-      <AdminTopbar />
+      <AdminTopbar
+        searchPlaceholder="Tìm kiếm khách hàng..."
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        actions={null}
+      />
 
       <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
         <div className="mx-auto max-w-7xl">
