@@ -11,6 +11,8 @@ import { motion } from 'motion/react'
 import { loyaltyHistory } from '@/shared/data/mockData'
 import type { LoyaltyHistoryItem } from '@/shared/data/mockData'
 import { cn } from '@/shared/lib/utils'
+import { ClientSidebar } from '@/features/client/components/client-sidebar'
+import { ClientTopbar } from '@/features/client/components/client-topbar'
 
 export function LoyaltyPage() {
   const [history] = useState<LoyaltyHistoryItem[]>(loyaltyHistory)
@@ -35,8 +37,13 @@ export function LoyaltyPage() {
   }
 
   return (
-    <div className='space-y-6'>
-      {/* Toast Reward Claim feedback */}
+    <div className="min-h-screen bg-background text-on-surface">
+      <ClientSidebar />
+      <ClientTopbar title="Khách hàng thân thiết" />
+
+      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
+        <div className="mx-auto max-w-[1280px] space-y-6">
+          {/* Toast Reward Claim feedback */}
       {claimedReward && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -350,6 +357,8 @@ export function LoyaltyPage() {
           </div>
         </div>
       </section>
+        </div>
+      </main>
     </div>
   )
 }

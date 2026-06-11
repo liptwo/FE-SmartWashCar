@@ -21,8 +21,10 @@ import { BookingPage } from '@/features/booking/pages/booking-page'
 import { ClientDashboardPage } from '@/features/client/pages/client-dashboard-page'
 import { ClientProfilePage } from '@/features/client/pages/client-profile-page'
 import { ClientVehiclesPage } from '@/features/client/pages/client-vehicles-page'
+import { ClientHistoryPage } from '@/features/client/pages/client-history-page'
 import { HomePage } from '@/features/marketing/pages/home-page'
-import { LoyaltyPage } from '@/features/marketing/pages/loyalty-page'
+import { LoyaltyPage } from '@/features/client/pages/loyalty-page'
+import ClientPromotionsPage from '@/features/client/pages/client-promotions-page'
 import { OtpPage } from '@/features/auth/pages/otp-page'
 import { TestRoutesPage } from '@/features/test/pages/test-routes-page'
 import { isAppPath, routes, type AppPath } from './routes'
@@ -67,6 +69,12 @@ export function AppRouter() {
   return (
     <RouterContext.Provider value={value}>
       {path === routes.dashboard ||
+      path === routes.profile ||
+      path === routes.vehicles ||
+      path === routes.booking ||
+      path === routes.history ||
+      path === routes.loyalty ||
+      path === routes.promotions ||
       path === routes.admin ||
       path === routes.adminBookings ||
       path === routes.customer ||
@@ -101,8 +109,12 @@ function renderRoute(path: AppPath) {
       return <BookingPage onBookingSuccess={() => {}} />
     case routes.loyalty:
       return <LoyaltyPage />
+    case routes.promotions:
+      return <ClientPromotionsPage />
     case routes.dashboard:
       return <ClientDashboardPage />
+    case routes.history:
+      return <ClientHistoryPage />
     case routes.profile:
       return <ClientProfilePage />
     case routes.vehicles:

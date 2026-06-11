@@ -57,24 +57,54 @@ export function AuthPage({ mode }: AuthPageProps) {
                 </label>
               )}
 
+              {isLogin ? (
+                <label className="grid gap-2 text-sm font-medium leading-4 text-on-surface-variant">
+                  Email hoặc Số điện thoại
+                  <Input autoComplete="username" placeholder="Nhập email hoặc số điện thoại" type="text" />
+                </label>
+              ) : (
+                <>
+                  <label className="grid gap-2 text-sm font-medium leading-4 text-on-surface-variant">
+                    Email
+                    <Input autoComplete="email" placeholder="Nhập email" type="email" />
+                  </label>
+                  <label className="grid gap-2 text-sm font-medium leading-4 text-on-surface-variant">
+                    Số điện thoại
+                    <span className="relative block">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base leading-6 text-on-surface-variant">
+                        +84
+                      </span>
+                      <Input autoComplete="tel" className="pl-14" placeholder="Nhập số điện thoại" type="tel" />
+                    </span>
+                  </label>
+                </>
+              )}
+
               <label className="grid gap-2 text-sm font-medium leading-4 text-on-surface-variant">
-                Số điện thoại
-                <span className="relative block">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base leading-6 text-on-surface-variant">
-                    +84
-                  </span>
-                  <Input autoComplete="tel" className="pl-14" placeholder="Nhập số điện thoại" type="tel" />
-                </span>
+                Mật khẩu
+                <Input autoComplete={isLogin ? 'current-password' : 'new-password'} placeholder="Nhập mật khẩu" type="password" />
               </label>
 
+              {!isLogin && (
+                <label className="grid gap-2 text-sm font-medium leading-4 text-on-surface-variant">
+                  Xác nhận mật khẩu
+                  <Input autoComplete="new-password" placeholder="Nhập lại mật khẩu" type="password" />
+                </label>
+              )}
+
               <Button asChild className="h-12 w-full text-base" size="lg">
-                <Link to={routes.otp}>{isLogin ? 'Nhận mã OTP' : 'Đăng ký'}</Link>
+                <Link to={routes.home}>{isLogin ? 'Đăng nhập' : 'Đăng ký'}</Link>
               </Button>
 
               {isLogin && (
-                <Link className="justify-self-center text-base leading-6 text-primary hover:underline" to={routes.register}>
-                  Đăng ký tài khoản mới
-                </Link>
+                <div className="flex flex-col items-center gap-2">
+                  <Link className="text-sm font-medium text-primary hover:underline" to={routes.otp}>
+                    Quên mật khẩu? (OTP)
+                  </Link>
+                  <Link className="text-base leading-6 text-primary hover:underline" to={routes.register}>
+                    Đăng ký tài khoản mới
+                  </Link>
+                </div>
               )}
             </form>
           </CardContent>

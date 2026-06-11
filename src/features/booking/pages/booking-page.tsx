@@ -18,6 +18,8 @@ import {
   type ServiceItem
 } from '@/shared/data/mockData'
 import { formatCurrency, cn } from '@/shared/lib/utils'
+import { ClientSidebar } from '@/features/client/components/client-sidebar'
+import { ClientTopbar } from '@/features/client/components/client-topbar'
 
 interface BookingPageProps {
   onBookingSuccess: (newBooking: any) => void
@@ -121,8 +123,13 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   }
 
   return (
-    <div className='space-y-8 pb-16'>
-      {/* 3-Step Wizard Indicator */}
+    <div className="min-h-screen bg-background text-on-surface">
+      <ClientSidebar />
+      <ClientTopbar title="Đặt lịch dịch vụ" />
+
+      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
+        <div className="mx-auto max-w-[1280px] space-y-8 pb-16 relative">
+          {/* 3-Step Wizard Indicator */}
       <div className='flex items-center justify-between max-w-2xl mx-auto mb-8 relative'>
         <div className='absolute top-1/2 left-0 w-full h-[0.5px] bg-slate-200 -translate-y-1/2 -z-10'></div>
 
@@ -579,6 +586,8 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
           </div>
         )}
       </AnimatePresence>
+        </div>
+      </main>
     </div>
   )
 }

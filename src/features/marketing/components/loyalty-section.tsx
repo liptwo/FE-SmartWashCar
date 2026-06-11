@@ -19,7 +19,7 @@ export function LoyaltySection() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Các hạng thành viên">
           {loyaltyTiers.map((tier) => (
             <div className="grid justify-items-center gap-2" key={tier.name}>
-              <span className={cn('h-1 w-16 rounded-full', tier.className)} />
+              <span className={cn('h-10 w-16 rounded-full', tier.className)} />
               <strong className="text-sm font-medium leading-5">{tier.name}</strong>
             </div>
           ))}
