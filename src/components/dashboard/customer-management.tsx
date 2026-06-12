@@ -472,6 +472,51 @@ export default function CustomerManagement() {
               )}
             </div>
 
+            {/* TAB 3: HIỂN THỊ LỊCH SỬ RỬA XE (DỮ LIỆU THẬT) */}
+              {activeTab === 'history' && (
+                <div className="space-y-3 animate-in fade-in duration-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lịch sử dịch vụ gần đây</h4>
+                    <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
+                      {bookingHistory.length} lần rửa
+                    </span>
+                  </div>
+
+                  {isLoadingHistory ? (
+                    <p className="text-xs text-slate-400 text-center py-4 animate-pulse">⏳ Đang tải lịch sử dịch vụ...</p>
+                  ) : bookingHistory.length > 0 ? (
+                    <div className="space-y-2">
+                      {bookingHistory.map((booking) => (
+                        <div key={booking.bookingId} className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs flex justify-between items-center hover:border-blue-200 transition">
+                          <div className="space-y-1">
+                            <p className="text-sm font-semibold text-slate-800">
+                              {booking.serviceType || "Dịch vụ SmartWash Premium"}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              Ngày: {new Date(booking.scheduledAt).toLocaleString('vi-VN')} • Biển số: <span className="font-medium text-slate-600">{booking.plateNumber || "N/A"}</span>
+                            </p>
+                          </div>
+                          <div className="text-right space-y-1">
+                            <p className="text-sm font-bold text-blue-900">{booking.totalPrice ? booking.totalPrice.toLocaleString('vi-VN') : 0}đ</p>
+                            <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-sm ${
+                              booking.status === 'COMPLETED' ? 'bg-green-50 text-green-700 border border-green-200' :
+                              booking.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-50 text-slate-500'
+                            }`}>
+                              {booking.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 bg-white rounded-xl border border-slate-200/60 p-4">
+                      <p className="text-sm font-medium text-slate-400">Chưa có lịch sử rửa xe!</p>
+                      <p className="text-xs text-slate-400 mt-1">Hóa đơn dịch vụ của khách hàng sẽ xuất hiện tại đây sau khi hoàn thành đơn rửa đầu tiên.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
             {/* Drawer Footer */}
             <div className="p-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-3">
               <button 
