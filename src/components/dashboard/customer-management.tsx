@@ -28,10 +28,22 @@ interface Vehicle {
   vehicleType: string;
 }
 
+interface Booking {
+  bookingId: string;
+  plateNumber: string;
+  serviceType?: string;
+  totalPrice: number;
+  status: string;
+  scheduledAt: string;
+}
+
 export default function CustomerManagement() {
   // State lưu trữ danh sách thật từ API
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const [bookingHistory, setBookingHistory] = useState<Booking[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
 
   // State quản lý danh sách xe phục vụ Phần 3
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
