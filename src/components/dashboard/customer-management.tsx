@@ -300,6 +300,7 @@ export default function CustomerManagement() {
                           setActiveTab('info');
                           if (selectedCustomerId !== customer.customerId) {
                             fetchCustomerVehicles(customer.customerId);
+                            fetchCustomerHistory(customer.customerId);
                           }
                         }} 
                       />
@@ -333,6 +334,7 @@ export default function CustomerManagement() {
                           setSelectedCustomerId(customer.customerId);
                           setActiveTab('info');
                           fetchCustomerVehicles(customer.customerId); // Gọi API lấy xe khi click xem chi tiết
+                          fetchCustomerHistory(customer.customerId); // Gọi API lấy lịch sử rửa xe khi click xem chi tiết
                         }}
                         className={`p-1.5 rounded-lg transition ${selectedCustomerId === customer.customerId ? 'bg-blue-900 text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
                       >
