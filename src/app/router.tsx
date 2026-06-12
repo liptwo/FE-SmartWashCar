@@ -29,6 +29,33 @@ import ClientPromotionsPage from '@/features/client/pages/client-promotions-page
 import { OtpPage } from '@/features/auth/pages/otp-page'
 import { TestRoutesPage } from '@/features/test/pages/test-routes-page'
 import { isAppPath, routes, type AppPath } from './routes'
+import { authStore } from '@/features/auth/store/auth-store'
+
+const protectedRoutes: AppPath[] = [
+  routes.dashboard,
+  routes.profile,
+  routes.vehicles,
+  routes.booking,
+  routes.history,
+  routes.loyalty,
+  routes.promotions,
+  routes.admin,
+  routes.adminBookings,
+  routes.customer,
+  routes.rewards,
+  routes.adminPromotions,
+  routes.adminReports,
+  routes.adminConfiguration,
+]
+
+function Navigate({ to }: { to: AppPath }) {
+  const { navigate } = useRouter()
+  useEffect(() => {
+    navigate(to)
+  }, [navigate, to])
+  return null
+}
+
 
 type RouterContextValue = {
   path: AppPath
@@ -92,8 +119,14 @@ export function AppRouter() {
 }
 
 function renderRoute(path: AppPath) {
-  // TODO(auth): Khi backend/session sẵn sàng, bật guard này để chặn user chưa đăng nhập:
-  // if (path === routes.dashboard && !authStore.isAuthenticated()) return <Navigate to={routes.login} />
+  if (protectedRoutes.includes(path) && !authStore.isAuthenticated()) {
+    return <Navigate to={routes.login} />
+  }
+
+  if ((path === routes.login || path === routes.register) && authStore.isAuthenticated()) {
+    return <Navigate to={routes.dashboard} />
+  }
+
   switch (path) {
     case routes.adminConfiguration:
       return <AdminConfigurationPage />
