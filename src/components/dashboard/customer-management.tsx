@@ -45,7 +45,7 @@ export default function CustomerManagement() {
   const [bookingHistory, setBookingHistory] = useState<Booking[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
 
-  // State quản lý danh sách xe phục vụ Phần 3
+  
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState<boolean>(false);
 
@@ -84,7 +84,7 @@ export default function CustomerManagement() {
     }
   };
 
-  // 🛠️ HÀM GỌI API LẤY DANH SÁCH XE THEO CUSTOMER ID
+  //  HÀM GỌI API LẤY DANH SÁCH XE THEO CUSTOMER ID
   const fetchCustomerVehicles = async (customerId: string) => {
     try {
       setIsLoadingVehicles(true);
@@ -102,6 +102,24 @@ export default function CustomerManagement() {
       setIsLoadingVehicles(false);
     }
   };
+
+  const fetchCustomerHistory = async (customerId: string) => {
+  try {
+    setIsLoadingHistory(true);
+    const response = await fetch(`http://localhost:8080/api/admin/customers/${customerId}/history`);
+    if (response.ok) {
+      const data = await response.json();
+      setBookingHistory(data);
+    } else {
+      setBookingHistory([]);
+    }
+  } catch (error) {
+    console.error("Lỗi lấy lịch sử rửa xe:", error);
+    setBookingHistory([]);
+  } finally {
+    setIsLoadingHistory(false);
+  }
+};
 
   // Tự động gọi API khi render component
   useEffect(() => {
