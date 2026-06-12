@@ -385,6 +385,7 @@ export default function CustomerManagement() {
             <div className="px-6 border-b border-slate-100 flex gap-4 text-sm font-medium text-slate-400">
               <button onClick={() => setActiveTab('info')} className={`py-3 transition-all ${activeTab === 'info' ? 'text-blue-900 border-b-2 border-blue-900 font-semibold' : 'hover:text-slate-600'}`}>Thông tin</button>
               <button onClick={() => setActiveTab('vehicles')} className={`py-3 transition-all ${activeTab === 'vehicles' ? 'text-blue-900 border-b-2 border-blue-900 font-semibold' : 'hover:text-slate-600'}`}>Xe</button>
+              <button onClick={() => setActiveTab('history')} className={`py-3 transition-all ${activeTab === 'history' ? 'text-blue-900 border-b-2 border-blue-900 font-semibold' : 'hover:text-slate-600'}`}>Lịch sử rửa</button>
             </div>
 
             {/* Drawer Content */}
