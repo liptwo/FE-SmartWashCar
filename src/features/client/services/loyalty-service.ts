@@ -28,6 +28,19 @@ export interface Page<T> {
   number: number
 }
 
+export interface RedeemPointsRequest {
+  customerId: string
+  redeemType: string
+  referenceId: string
+}
+
+export interface RedeemPointsResponse {
+  customerId: string
+  pointsRedeemed: number
+  newBalance: number
+  rewardDetails?: string
+}
+
 export const loyaltyService = {
   async getLoyaltyBalance(customerId: string): Promise<PointBalanceResponse> {
     const { data } = await authorizeAxios.get<PointBalanceResponse>(`/loyalty/balance/${customerId}`)
@@ -41,6 +54,11 @@ export const loyaltyService = {
     const { data } = await authorizeAxios.get<Page<PointHistoryResponse>>(`/customers/${customerId}/points`, {
       params,
     })
+    return data
+  },
+
+  async redeemPoints(payload: RedeemPointsRequest): Promise<RedeemPointsResponse> {
+    const { data } = await authorizeAxios.post<RedeemPointsResponse>('/loyalty/redeem', payload)
     return data
   },
 }
