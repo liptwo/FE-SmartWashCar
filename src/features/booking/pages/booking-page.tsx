@@ -90,10 +90,31 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
 
   // Select default vehicle when list is loaded
   useEffect(() => {
-    if (vehicles.length > 0 && !selectedVehicle) {
-      setSelectedVehicle(vehicles[0])
+    if (vehicles.length > 0) {
+      const storedVehicleId = localStorage.getItem('booking_vehicle_id')
+      if (storedVehicleId) {
+        const found = vehicles.find(v => v.id === storedVehicleId)
+        if (found) {
+          setSelectedVehicle(found)
+          localStorage.removeItem('booking_vehicle_id')
+          return
+        }
+      }
+
+      if (!selectedVehicle) {
+        const primary = apiVehicles.find(v => v.primary)
+        if (primary) {
+          const primaryId = primary.id || (primary as any).vehicleId
+          const foundPrimary = vehicles.find(v => v.id === primaryId)
+          if (foundPrimary) {
+            setSelectedVehicle(foundPrimary)
+            return
+          }
+        }
+        setSelectedVehicle(vehicles[0])
+      }
     }
-  }, [vehicles, selectedVehicle])
+  }, [vehicles, selectedVehicle, apiVehicles])
 
   // Fetch slot availability when selected date changes
   useEffect(() => {
