@@ -1,24 +1,16 @@
-import { useState, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { Camera, Edit, LogOut, Phone } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { AnimatePresence, motion } from 'motion/react'
 import { ClientSidebar } from '@/features/client/components/client-sidebar'
 import { ClientTopbar } from '@/features/client/components/client-topbar'
 import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
 import { cn } from '@/shared/lib/utils'
-
-const customer = {
-  name: 'Alex Nguyen',
-  initials: 'AN',
-  phone: '090 123 4567',
-  email: 'alex.nguyen@example.com',
-  tier: 'Gold',
-}
-
-const personalFields = [
-  { label: 'Họ và tên', value: customer.name },
-  { label: 'Số điện thoại', value: customer.phone },
-  { label: 'Email', value: customer.email },
-]
+import type { AppDispatch, RootState } from '@/app/store'
+import { logout, updateUser } from '@/features/auth/store/auth-slice'
+import { customerService } from '@/features/client/services/customer-service'
 
 const notificationSettings = [
   {
@@ -78,18 +70,101 @@ function SectionCard({ children, title }: { children: ReactNode; title: string }
 }
 
 export function ClientProfilePage() {
+  const dispatch = useDispatch<AppDispatch>()
+  const user = useSelector((state: RootState) => state.auth.user)
+  const { tier } = useSelector((state: RootState) => state.client.loyalty)
+
+  // Edit modal states
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Fetch up-to-date customer details on mount
+  useEffect(() => {
+    if (user?.id) {
+      customerService.getCustomer(user.id)
+        .then((data) => {
+          dispatch(updateUser({
+            name: data.fullName || data.name || user.name,
+            phone: data.phone || user.phone,
+            email: data.email || user.email
+          }))
+        })
+        .catch((err) => {
+          console.error('Không thể đồng bộ thông tin khách hàng từ backend:', err)
+        })
+    }
+  }, [user?.id, dispatch])
+
+  // Get user initials
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .filter(Boolean)
+        .map((n) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : 'KH'
+
+  // Open edit modal helper
+  const handleOpenEdit = () => {
+    setFullName(user?.name || '')
+    setPhone(user?.phone || '')
+    setEmail(user?.email || '')
+    setIsEditOpen(true)
+  }
+
+  // Handle Edit Submit
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user?.id) return
+    if (!fullName || !phone || !email) {
+      toast.error('Vui lòng nhập đầy đủ thông tin')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const updated = await customerService.updateCustomer(user.id, {
+        fullName,
+        phone,
+        email
+      })
+      dispatch(updateUser({
+        name: updated.fullName || updated.name || fullName,
+        phone: updated.phone || phone,
+        email: updated.email || email
+      }))
+      toast.success('Cập nhật hồ sơ thành công')
+      setIsEditOpen(false)
+    } catch {
+      toast.error('Có lỗi xảy ra khi cập nhật hồ sơ')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const personalFields = [
+    { label: 'Họ và tên', value: user?.name || 'Chưa cập nhật' },
+    { label: 'Số điện thoại', value: user?.phone || 'Chưa cập nhật' },
+    { label: 'Email', value: user?.email || 'Chưa cập nhật' },
+  ]
+
   return (
     <div className="min-h-screen bg-background text-on-surface">
       <ClientSidebar />
       <ClientTopbar title="Hồ sơ" utility="settings" />
 
       <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
-        <div className="mx-auto max-w-[1280px] space-y-6">
+        <div className="mx-auto max-w-[1280px] space-y-6 relative">
           <Card className="flex flex-col gap-6 rounded-lg p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-6">
               <div className="relative shrink-0">
                 <div className="grid size-24 place-items-center rounded-full border-4 border-surface-container bg-primary text-4xl font-bold text-primary-foreground shadow-md">
-                  {customer.initials}
+                  {initials}
                 </div>
                 <button
                   aria-label="Cập nhật ảnh đại diện"
@@ -102,19 +177,20 @@ export function ClientProfilePage() {
 
               <div>
                 <div className="mb-2 flex flex-wrap items-center gap-3">
-                  <h1 className="text-2xl font-medium leading-8 text-on-background">{customer.name}</h1>
+                  <h1 className="text-2xl font-medium leading-8 text-on-background">{user?.name || 'Khách hàng'}</h1>
                   <span className="rounded-lg bg-tier-gold px-3 py-1 text-[10px] font-bold uppercase leading-4 tracking-widest text-[#2f1400]">
-                    {customer.tier}
+                    {tier} Member
                   </span>
                 </div>
                 <p className="flex items-center gap-2 text-base leading-6 text-on-surface-variant">
                   <Phone className="size-4 text-outline" />
-                  {customer.phone}
+                  {user?.phone || 'Chưa cập nhật'}
                 </p>
               </div>
             </div>
 
             <Button
+              onClick={handleOpenEdit}
               className="h-12 gap-3 border-primary px-6 text-primary hover:bg-primary/10 sm:self-center"
               type="button"
               variant="outline"
@@ -128,12 +204,12 @@ export function ClientProfilePage() {
             <SectionCard title="Thông tin cá nhân">
               <div className="space-y-5 p-6">
                 {personalFields.map((field) => (
-                  <label className="block" key={field.label}>
+                  <div className="block" key={field.label}>
                     <span className="mb-2 block text-sm font-medium leading-4 text-outline">{field.label}</span>
                     <span className="block rounded-lg border border-outline-variant bg-background px-4 py-3 text-base leading-6 text-on-surface">
                       {field.value}
                     </span>
-                  </label>
+                  </div>
                 ))}
               </div>
             </SectionCard>
@@ -155,6 +231,7 @@ export function ClientProfilePage() {
 
           <div className="flex justify-end border-t border-outline-variant pt-6">
             <Button
+              onClick={() => dispatch(logout())}
               className="h-12 gap-3 border-danger px-6 text-danger hover:bg-danger/10 hover:text-danger"
               type="button"
               variant="outline"
@@ -163,6 +240,88 @@ export function ClientProfilePage() {
               Đăng xuất
             </Button>
           </div>
+
+          {/* Edit Profile Modal */}
+          <AnimatePresence>
+            {isEditOpen && (
+              <div className="fixed inset-0 bg-slate-950/20 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="bg-white rounded-2xl max-w-sm w-full p-6 border border-slate-200/80 shadow-2xl space-y-4"
+                >
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                    <h4 className="text-xs font-bold uppercase tracking-tight text-slate-800">
+                      Chỉnh sửa thông tin hồ sơ
+                    </h4>
+                    <button
+                      onClick={() => setIsEditOpen(false)}
+                      className="text-slate-450 hover:text-slate-605 text-xs font-bold cursor-pointer"
+                    >
+                      Đóng
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveProfile} className="space-y-3 pt-1">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                        Họ và tên *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                        Số điện thoại *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditOpen(false)}
+                        className="flex-1 py-2 border border-slate-200 text-xs font-bold text-slate-650 rounded-xl hover:bg-slate-50 transition-colors"
+                      >
+                        Hủy bỏ
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="flex-1 py-2 bg-primary text-on-primary text-xs font-bold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-indigo-100 cursor-pointer disabled:opacity-50"
+                      >
+                        {isSaving ? 'Đang lưu...' : 'Lưu thông tin'}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
     </div>

@@ -1,9 +1,12 @@
+import { useDispatch } from 'react-redux'
 import { Link, useRouter } from '@/app/router'
 import { Button } from '@/shared/components/ui/button'
+import { logout } from '@/features/auth/store/auth-slice'
 import { dashboardLogoutItem, dashboardNavItems } from '@/features/client/data/client-dashboard'
 import { cn } from '@/shared/lib/utils'
 
 export function ClientSidebar() {
+  const dispatch = useDispatch()
   const { path } = useRouter()
   const LogoutIcon = dashboardLogoutItem.icon
 
@@ -44,6 +47,7 @@ export function ClientSidebar() {
 
       <div className='border-t border-outline-variant px-6 pt-6'>
         <Button
+          onClick={() => dispatch(logout())}
           className='w-full justify-start gap-3 px-0 text-on-surface-variant hover:text-danger'
           variant='ghost'
         >

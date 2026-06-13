@@ -93,6 +93,13 @@ const authSlice = createSlice({
       localStorage.removeItem(REFRESH_TOKEN_KEY)
       localStorage.removeItem(USER_KEY)
     },
+    updateUser(state, action: PayloadAction<User>) {
+      state.user = {
+        ...state.user,
+        ...action.payload,
+      }
+      localStorage.setItem(USER_KEY, JSON.stringify(state.user))
+    },
     clearError(state) {
       state.error = null
     }
@@ -105,6 +112,7 @@ export const {
   registerSuccess,
   authFailure,
   logout,
+  updateUser,
   clearError
 } = authSlice.actions
 
