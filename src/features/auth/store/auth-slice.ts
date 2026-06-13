@@ -8,6 +8,7 @@ const USER_KEY = 'auth_user'
 export interface User {
   id?: string
   name?: string
+  fullName?: string
   email?: string
   phone?: string
   role?: string

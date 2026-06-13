@@ -11,6 +11,7 @@ import {
   LogOut,
   Tag,
   UserCircle,
+  BookOpen,
   type LucideIcon,
 } from 'lucide-react'
 import { routes, type AppPath } from '@/app/routes'
@@ -47,6 +48,7 @@ export const dashboardNavItems: DashboardNavItem[] = [
   { activePath: routes.loyalty, icon: Gift, label: 'Điểm thưởng', path: routes.loyalty },
   { activePath: routes.history, icon: History, label: 'Lịch sử', path: routes.history },
   { activePath: routes.promotions, icon: Tag, label: 'Khuyến mãi', path: routes.promotions },
+  { activePath: routes.articles, icon: BookOpen, label: 'Cẩm nang', path: routes.articles },
   { activePath: routes.vehicles, icon: Car, label: 'Xe của tôi', path: routes.vehicles },
   { activePath: routes.profile, icon: UserCircle, label: 'Hồ sơ', path: routes.profile },
 ]

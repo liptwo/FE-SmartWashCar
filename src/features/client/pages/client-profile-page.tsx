@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, useMemo, type ReactNode } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Camera, Edit, LogOut, Phone } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/utils'
 import type { AppDispatch, RootState } from '@/app/store'
 import { logout, updateUser } from '@/features/auth/store/auth-slice'
 import { customerService } from '@/features/client/services/customer-service'
+import { authService } from '@/features/auth/services/auth-service'
 
 const notificationSettings = [
   {
@@ -81,22 +82,43 @@ export function ClientProfilePage() {
   const [email, setEmail] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
-  // Fetch up-to-date customer details on mount
-  useEffect(() => {
-    if (user?.id) {
-      customerService.getCustomer(user.id)
-        .then((data) => {
-          dispatch(updateUser({
-            name: data.fullName || data.name || user.name,
-            phone: data.phone || user.phone,
-            email: data.email || user.email
-          }))
-        })
-        .catch((err) => {
-          console.error('Không thể đồng bộ thông tin khách hàng từ backend:', err)
-        })
+  // Robust Customer ID resolution from Redux state or JWT token
+  const customerId = useMemo(() => {
+    if (user?.id) return user.id
+    if ((user as any).userId) return (user as any).userId
+    
+    // Decode JWT payload
+    const token = localStorage.getItem('jwt_token')
+    if (token) {
+      try {
+        const base64Url = token.split('.')[1]
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+        const payload = JSON.parse(window.atob(base64))
+        return payload.id || payload.userId || payload.sub
+      } catch (e) {
+        console.error('Lỗi giải mã JWT token:', e)
+      }
     }
-  }, [user?.id, dispatch])
+    return null
+  }, [user])
+
+  // Sync user info from /auth/me on mount
+  useEffect(() => {
+    authService.getMe()
+      .then((data) => {
+        dispatch(updateUser({
+          id: data.id || data.customerId || customerId || undefined,
+          name: data.name || data.fullName || user?.name,
+          fullName: data.fullName || data.name || user?.fullName || user?.name,
+          phone: data.phone || user?.phone,
+          email: data.email || user?.email,
+          role: data.role || user?.role
+        }))
+      })
+      .catch((err) => {
+        console.error('Không thể đồng bộ thông tin khách hàng từ /auth/me:', err)
+      })
+  }, [dispatch, customerId])
 
   // Get user initials
   const initials = user?.name
@@ -120,7 +142,10 @@ export function ClientProfilePage() {
   // Handle Edit Submit
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user?.id) return
+    if (!customerId) {
+      toast.error('Không tìm thấy ID người dùng để cập nhật')
+      return
+    }
     if (!fullName || !phone || !email) {
       toast.error('Vui lòng nhập đầy đủ thông tin')
       return
@@ -128,20 +153,23 @@ export function ClientProfilePage() {
 
     setIsSaving(true)
     try {
-      const updated = await customerService.updateCustomer(user.id, {
+      const updated = await authService.updateMe({
         fullName,
         phone,
         email
       })
       dispatch(updateUser({
-        name: updated.fullName || updated.name || fullName,
+        id: updated.id || updated.customerId || customerId,
+        name: updated.name || updated.fullName || fullName,
+        fullName: updated.fullName || updated.name || fullName,
         phone: updated.phone || phone,
         email: updated.email || email
       }))
       toast.success('Cập nhật hồ sơ thành công')
       setIsEditOpen(false)
-    } catch {
-      toast.error('Có lỗi xảy ra khi cập nhật hồ sơ')
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || 'Có lỗi xảy ra khi cập nhật hồ sơ'
+      toast.error(errMsg)
     } finally {
       setIsSaving(false)
     }

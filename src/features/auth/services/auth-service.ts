@@ -47,4 +47,14 @@ export const authService = {
     })
     return data
   },
+
+  async getMe(): Promise<{ id?: string; customerId?: string; name?: string; fullName?: string; email?: string; phone?: string; role?: string }> {
+    const { data } = await authorizeAxios.get<{ id?: string; customerId?: string; name?: string; fullName?: string; email?: string; phone?: string; role?: string }>('/auth/me')
+    return data
+  },
+
+  async updateMe(payload: { fullName: string; phone: string; email: string }): Promise<{ id?: string; customerId?: string; name?: string; fullName?: string; email?: string; phone?: string; role?: string }> {
+    const { data } = await authorizeAxios.put<{ id?: string; customerId?: string; name?: string; fullName?: string; email?: string; phone?: string; role?: string }>('/auth/me', payload)
+    return data
+  },
 }

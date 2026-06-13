@@ -18,12 +18,12 @@ export interface CustomerUpdateRequest {
 
 export const customerService = {
   async getCustomer(id: string): Promise<CustomerResponse> {
-    const { data } = await authorizeAxios.get<CustomerResponse>(`/admin/customers/${id}`)
+    const { data } = await authorizeAxios.get<CustomerResponse>(`/customers/${id}`)
     return data
   },
 
   async updateCustomer(id: string, payload: CustomerUpdateRequest): Promise<CustomerResponse> {
-    const { data } = await authorizeAxios.put<CustomerResponse>(`/admin/customers/${id}`, payload)
+    const { data } = await authorizeAxios.put<CustomerResponse>(`/customers/${id}`, payload)
     return data
   },
 }

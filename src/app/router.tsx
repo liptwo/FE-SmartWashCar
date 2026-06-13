@@ -23,6 +23,8 @@ import { ClientDashboardPage } from '@/features/client/pages/client-dashboard-pa
 import { ClientProfilePage } from '@/features/client/pages/client-profile-page'
 import { ClientVehiclesPage } from '@/features/client/pages/client-vehicles-page'
 import { ClientHistoryPage } from '@/features/client/pages/client-history-page'
+import { ClientArticlesPage } from '@/features/client/pages/client-articles-page'
+import { AdminArticlesPage } from '@/features/admin/pages/admin-articles-page'
 import { HomePage } from '@/features/marketing/pages/home-page'
 import { LoyaltyPage } from '@/features/client/pages/loyalty-page'
 import ClientPromotionsPage from '@/features/client/pages/client-promotions-page'
@@ -39,6 +41,8 @@ const protectedRoutes: AppPath[] = [
   routes.history,
   routes.loyalty,
   routes.promotions,
+  routes.articles,
+  routes.adminArticles,
   routes.admin,
   routes.adminBookings,
   routes.customer,
@@ -103,6 +107,8 @@ export function AppRouter() {
       path === routes.history ||
       path === routes.loyalty ||
       path === routes.promotions ||
+      path === routes.articles ||
+      path === routes.adminArticles ||
       path === routes.admin ||
       path === routes.adminBookings ||
       path === routes.customer ||
@@ -146,6 +152,10 @@ function renderRoute(path: AppPath) {
       return <BookingPage onBookingSuccess={() => {}} />
     case routes.loyalty:
       return <LoyaltyPage />
+    case routes.articles:
+      return <ClientArticlesPage />
+    case routes.adminArticles:
+      return <AdminArticlesPage />
     case routes.promotions:
       return <ClientPromotionsPage />
     case routes.dashboard:

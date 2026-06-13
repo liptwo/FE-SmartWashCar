@@ -10,10 +10,11 @@ import {
   Tag,
   UserPlus,
   Users,
+  BookOpen,
   type LucideIcon,
 } from 'lucide-react'
 
-export type AdminNavKey = 'dashboard' | 'booking' | 'customers' | 'promotion' | 'configuration' | 'reports' | 'lpr'
+export type AdminNavKey = 'dashboard' | 'booking' | 'customers' | 'promotion' | 'configuration' | 'reports' | 'lpr' | 'articles'
 
 export type AdminNavItem = {
   active?: boolean
@@ -44,6 +45,7 @@ export const adminNavItems: AdminNavItem[] = [
   { key: 'booking', icon: CalendarDays, label: 'Booking' },
   { key: 'customers', icon: Users, label: 'Khách hàng' },
   { key: 'promotion', icon: Tag, label: 'Promotion' },
+  { key: 'articles', icon: BookOpen, label: 'Bài viết' },
   { key: 'configuration', icon: Settings, label: 'Configuration' },
   { key: 'reports', icon: BarChart3, label: 'Reports' }
 ]

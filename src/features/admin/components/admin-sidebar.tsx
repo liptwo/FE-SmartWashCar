@@ -12,6 +12,7 @@ const navRouteMap: Partial<Record<AdminNavKey, AppPath>> = {
   booking: routes.adminBookings,
   customers: routes.customer,
   promotion: routes.adminPromotions,
+  articles: routes.adminArticles,
   configuration: routes.adminConfiguration,
   reports: routes.adminReports
 }
