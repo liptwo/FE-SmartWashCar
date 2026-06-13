@@ -1,18 +1,23 @@
 import { Bell, HelpCircle, Settings, Smartphone } from 'lucide-react'
+import { useSelector } from 'react-redux'
 import { Button } from '@/shared/components/ui/button'
+import type { RootState } from '@/app/store'
 
 type ClientTopbarProps = {
   title?: string
   utility?: 'help' | 'settings'
 }
 
-export function ClientTopbar({ title = 'Xin chào, Nguyễn Văn A', utility = 'help' }: ClientTopbarProps) {
+export function ClientTopbar({ title, utility = 'help' }: ClientTopbarProps) {
+  const user = useSelector((state: RootState) => state.auth.user)
+  const displayName = user?.name || user?.phone || 'Khách hàng'
+  const displayTitle = title || `Xin chào, ${displayName}`
   const UtilityIcon = utility === 'settings' ? Settings : HelpCircle
   const utilityLabel = utility === 'settings' ? 'Cài đặt' : 'Trợ giúp'
 
   return (
     <header className="fixed right-0 top-0 z-30 flex h-16 w-full items-center justify-between border-b border-outline-variant bg-surface px-6 lg:w-[calc(100%-16rem)]">
-      <h2 className="text-xl font-medium leading-7 text-on-surface">{title}</h2>
+      <h2 className="text-xl font-medium leading-7 text-on-surface">{displayTitle}</h2>
 
       <div className="flex items-center gap-4">
         <Button aria-label="Thông báo" size="icon" type="button" variant="ghost">
