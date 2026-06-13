@@ -8,9 +8,9 @@ import { Link } from '@/app/router'
 export function UpcomingAppointment() {
   const { items, isLoading } = useSelector((state: RootState) => state.client.bookings)
 
-  // Filter for upcoming bookings (CONFIRMED or IN_PROGRESS)
+  // Filter for upcoming bookings (PENDING, CONFIRMED or IN_PROGRESS)
   const upcomingBookings = items
-    .filter((booking) => booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS')
+    .filter((booking) => booking.status === 'PENDING' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS')
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
 
   const latestBooking = upcomingBookings[0]
