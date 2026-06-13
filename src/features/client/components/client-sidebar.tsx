@@ -21,7 +21,7 @@ export function ClientSidebar() {
       <nav className='flex-1 space-y-1'>
         {dashboardNavItems.map((item) => {
           const Icon = item.icon
-          const isActive = item.activePath === path
+          const isActive = (item.activePath || item.path) === path
 
           const targetPath = item.path
 

@@ -31,13 +31,19 @@ export interface AvailabilitySlotResponse {
 
 export const bookingService = {
   async getBookings(): Promise<BookingResponse[]> {
-    const { data } = await authorizeAxios.get<BookingResponse[]>('/bookings')
-    return data
+    const { data } = await authorizeAxios.get<any[]>('/bookings')
+    return data.map(b => ({
+      ...b,
+      id: b.bookingId || b.id
+    }))
   },
 
   async createBooking(payload: CreateBookingRequest): Promise<BookingResponse> {
-    const { data } = await authorizeAxios.post<BookingResponse>('/bookings', payload)
-    return data
+    const { data } = await authorizeAxios.post<any>('/bookings', payload)
+    return {
+      ...data,
+      id: data.bookingId || data.id
+    }
   },
 
   async getBookingDetail(bookingId: string): Promise<BookingResponse> {
