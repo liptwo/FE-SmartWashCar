@@ -1,13 +1,16 @@
 import { useDispatch } from 'react-redux'
+import toast from 'react-hot-toast'
 import { Link, useRouter } from '@/app/router'
+import { routes } from '@/app/routes'
 import { Button } from '@/shared/components/ui/button'
 import { logout } from '@/features/auth/store/auth-slice'
+import { clearClientState } from '@/features/client/store/client-slice'
 import { dashboardLogoutItem, dashboardNavItems } from '@/features/client/data/client-dashboard'
 import { cn } from '@/shared/lib/utils'
 
 export function ClientSidebar() {
   const dispatch = useDispatch()
-  const { path } = useRouter()
+  const { path, navigate } = useRouter()
   const LogoutIcon = dashboardLogoutItem.icon
 
   return (
@@ -47,7 +50,12 @@ export function ClientSidebar() {
 
       <div className='border-t border-outline-variant px-6 pt-6'>
         <Button
-          onClick={() => dispatch(logout())}
+          onClick={() => {
+            dispatch(logout())
+            dispatch(clearClientState())
+            toast.success('Đăng xuất thành công!')
+            navigate(routes.login)
+          }}
           className='w-full justify-start gap-3 px-0 text-on-surface-variant hover:text-danger'
           variant='ghost'
         >

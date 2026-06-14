@@ -10,8 +10,10 @@ import { Card } from '@/shared/components/ui/card'
 import { cn } from '@/shared/lib/utils'
 import type { AppDispatch, RootState } from '@/app/store'
 import { logout, updateUser } from '@/features/auth/store/auth-slice'
-import { customerService } from '@/features/client/services/customer-service'
+import { clearClientState } from '@/features/client/store/client-slice'
 import { authService } from '@/features/auth/services/auth-service'
+import { useRouter } from '@/app/router'
+import { routes } from '@/app/routes'
 
 const notificationSettings = [
   {
@@ -72,6 +74,7 @@ function SectionCard({ children, title }: { children: ReactNode; title: string }
 
 export function ClientProfilePage() {
   const dispatch = useDispatch<AppDispatch>()
+  const { navigate } = useRouter()
   const user = useSelector((state: RootState) => state.auth.user)
   const { tier } = useSelector((state: RootState) => state.client.loyalty)
 
@@ -259,7 +262,12 @@ export function ClientProfilePage() {
 
           <div className="flex justify-end border-t border-outline-variant pt-6">
             <Button
-              onClick={() => dispatch(logout())}
+              onClick={() => {
+                dispatch(logout())
+                dispatch(clearClientState())
+                toast.success('Đăng xuất thành công!')
+                navigate(routes.login)
+              }}
               className="h-12 gap-3 border-danger px-6 text-danger hover:bg-danger/10 hover:text-danger"
               type="button"
               variant="outline"
