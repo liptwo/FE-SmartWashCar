@@ -40,8 +40,6 @@ export const authService = {
 
   async login(payload: LoginPayload): Promise<AuthResponse> {
     const { data } = await authorizeAxios.post<AuthResponse>('/auth/login', {
-      email: payload.emailOrPhone,
-      phone: payload.emailOrPhone,
       username: payload.emailOrPhone,
       password: payload.password,
     })

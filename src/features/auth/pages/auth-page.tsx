@@ -124,7 +124,7 @@ export function AuthPage({ mode }: AuthPageProps) {
         await authService.register({
           name,
           email,
-          phone: phone.startsWith('+84') ? phone : `+84${phone.replace(/^0/, '')}`,
+          phone: phone.startsWith('0') ? phone : `0${phone.replace("+84", '')}`,
           password,
         })
         dispatch(registerSuccess())
