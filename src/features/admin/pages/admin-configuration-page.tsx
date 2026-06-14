@@ -12,9 +12,8 @@ export function AdminConfigurationPage() {
       <AdminSidebar activeItem="configuration" />
       <AdminTopbar title="Cấu hình hệ thống" showSearch={false} actions={null} />
 
-      <div className="min-h-screen pb-24 lg:ml-64">
-
-        <main className="mx-auto grid max-w-[1280px] grid-cols-12 gap-6 px-6 pt-24">
+      <main className="min-h-screen px-6 pb-28 pt-24 lg:pl-[calc(16rem+24px)]">
+        <div className="mx-auto grid max-w-7xl grid-cols-12 gap-6">
           <section className="col-span-12 space-y-4 lg:col-span-7">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-xl font-medium leading-7 text-on-surface">Quy tắc phân hạng</h2>
@@ -30,7 +29,7 @@ export function AdminConfigurationPage() {
             <PointRateCard />
             <RewardCatalog />
           </section>
-        </main>
+        </div>
 
         <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-end border-t border-border bg-surface/80 px-6 py-4 backdrop-blur-md lg:left-64">
           <div className="flex items-center gap-4">
@@ -43,7 +42,7 @@ export function AdminConfigurationPage() {
             </Button>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

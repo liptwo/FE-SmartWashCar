@@ -49,8 +49,8 @@ export function AdminCustomerPage() {
         actions={null}
       />
 
-      <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
-        <div className="mx-auto max-w-7xl">
+      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
+        <div className="mx-auto max-w-7xl space-y-6">
       {/* HEADER SECTION */}
       <div className="flex justify-between items-center mb-6">
         <div>

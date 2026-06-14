@@ -14,8 +14,8 @@ export function AdminDashboardPage() {
       <AdminSidebar />
       <AdminTopbar />
 
-      <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
-        <div className="mx-auto max-w-7xl">
+      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
+        <div className="mx-auto max-w-7xl space-y-6">
           <section className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <h2 className="text-2xl font-medium leading-8 text-primary">Tổng quan hệ thống</h2>

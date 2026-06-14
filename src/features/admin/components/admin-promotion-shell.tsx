@@ -8,7 +8,7 @@ export function AdminPromotionShell({ children }: { children: ReactNode }) {
       <AdminSidebar activeItem="promotion" />
       <AdminTopbar searchPlaceholder="Tìm kiếm chương trình..." />
 
-      <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
+      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
         {children}
       </main>
     </div>

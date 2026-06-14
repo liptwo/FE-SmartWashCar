@@ -16,7 +16,7 @@ export function AdminPromotionsPage() {
 
   return (
     <AdminPromotionShell>
-      <div className="mx-auto w-full max-w-[1280px]">
+      <div className="mx-auto max-w-7xl space-y-6">
         <section className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <h1 className="mb-2 text-2xl font-medium leading-8 text-on-surface">Quản lý Khuyến mãi</h1>

@@ -130,12 +130,12 @@ export function AdminArticlesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800">
+    <div className="min-h-screen bg-background text-on-surface">
       <AdminSidebar activeItem="articles" />
 
       {/* Main Content Area */}
       <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
-        <div className="mx-auto max-w-[1280px] space-y-6">
+        <div className="mx-auto max-w-7xl space-y-6">
           {/* Header */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>

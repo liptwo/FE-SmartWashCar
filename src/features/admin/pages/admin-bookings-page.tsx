@@ -188,9 +188,8 @@ export function AdminBookingsPage() {
         }
       />
 
-      <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
-        <div className="mx-auto max-w-7xl">
-          <div className='space-y-6'>
+      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
+        <div className="mx-auto max-w-7xl space-y-6">
       {/* Upper header section */}
       <div className='flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4'>
         <div>
@@ -852,7 +851,6 @@ export function AdminBookingsPage() {
           </div>
         )}
       </AnimatePresence>
-    </div>
         </div>
       </main>
     </div>

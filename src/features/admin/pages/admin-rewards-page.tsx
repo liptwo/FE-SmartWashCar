@@ -34,8 +34,8 @@ export function AdminRewardsPage() {
       <AdminSidebar activeItem="promotion" />
       <AdminTopbar />
 
-      <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
-        <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
+        <div className="mx-auto max-w-7xl space-y-6">
       {/* Header số điểm */}
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border">
         <div>

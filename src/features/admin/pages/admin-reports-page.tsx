@@ -57,7 +57,7 @@ export function AdminReportsPage() {
       <AdminSidebar activeItem="reports" />
       <AdminTopbar showSearch={false} actions={null} />
 
-      <main className="min-h-screen px-6 pb-6 pt-20 lg:pl-[calc(16rem+24px)]">
+      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
         <div className="mx-auto max-w-7xl space-y-6">
           
           {/* Page Header */}
