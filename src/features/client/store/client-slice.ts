@@ -99,7 +99,7 @@ const clientSlice = createSlice({
       })
       .addCase(fetchLoyaltyBalance.fulfilled, (state, action: PayloadAction<PointBalanceResponse>) => {
         state.loyalty.isLoading = false
-        state.loyalty.balance = action.payload.balance
+        state.loyalty.balance = action.payload.balance !== undefined ? action.payload.balance : (action.payload.currentPoints ?? 0)
         state.loyalty.tier = action.payload.tier || 'Regular'
         state.loyalty.nextTierPoints = action.payload.nextTierPoints || 0
       })

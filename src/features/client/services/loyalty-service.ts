@@ -2,7 +2,8 @@ import { authorizeAxios } from '@/shared/lib/api-client'
 
 export interface PointBalanceResponse {
   customerId: string
-  balance: number
+  balance?: number
+  currentPoints?: number
   pointsExpiring?: number
   expiringAt?: string
   tier?: string // e.g. "Silver", "Gold", "Platinum"
