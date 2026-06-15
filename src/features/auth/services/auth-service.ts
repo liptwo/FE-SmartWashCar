@@ -39,10 +39,18 @@ export const authService = {
   },
 
   async login(payload: LoginPayload): Promise<AuthResponse> {
-    const { data } = await authorizeAxios.post<AuthResponse>('/auth/login', {
-      username: payload.emailOrPhone,
+    const isEmail = payload.emailOrPhone.includes('@')
+    const requestBody: any = {
       password: payload.password,
-    })
+    }
+
+    if (isEmail) {
+      requestBody.email = payload.emailOrPhone.trim()
+    } else {
+      requestBody.phone = payload.emailOrPhone.trim()
+    }
+
+    const { data } = await authorizeAxios.post<AuthResponse>('/auth/login', requestBody)
     return data
   },
 
