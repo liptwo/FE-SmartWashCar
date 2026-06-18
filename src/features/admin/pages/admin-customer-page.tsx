@@ -72,7 +72,7 @@ export function AdminCustomerPage() {
     fetchCustomers();
   }, []);
 
-  // 2. HÀM TỰ ĐỘNG GỌI API CHI TIẾT XE & LỊCH SỬ KHI ẤN CON MẮT
+  // 2. HÀM TỰ ĐỘNG GỌI API CHI TIẾT XE & LỊCH SỬ KHI ẤN CON MẮT - ĐÃ CÓ MAPPING SẠCH LỖI KHỚP ĐỊNH DẠNG
   const handleOpenDrawer = async (customerId: string) => {
     setSelectedCustomerId(customerId);
     setActiveTab('info');
@@ -83,10 +83,46 @@ export function AdminCustomerPage() {
         window.fetch(`http://localhost:8080/api/admin/customers/${customerId}/history`)
       ]);
       
-      if (vehiclesRes.ok) setCustomerVehicles(await vehiclesRes.json());
-      if (historyRes.ok) setCustomerBookings(await historyRes.json());
+      if (vehiclesRes.ok) {
+        const vData = await vehiclesRes.json();
+        if (Array.isArray(vData)) {
+          // Xử lý map động kiểm tra cả cấu trúc CamelCase và SnakeCase từ Postgres đổ lên
+          const mappedVehicles = vData.map((v: any) => ({
+            vehicleId: v.vehicleId || v.vehicle_id,
+            brand: v.brand,
+            color: v.color,
+            licensePlate: v.licensePlate || v.license_plate,
+            vehicleType: v.vehicleType || v.vehicle_type
+          }));
+          setCustomerVehicles(mappedVehicles);
+        } else {
+          setCustomerVehicles([]);
+        }
+      } else {
+        setCustomerVehicles([]);
+      }
+      
+      if (historyRes.ok) {
+        const bData = await historyRes.json();
+        if (Array.isArray(bData)) {
+          // Xử lý map động kiểm tra cấu trúc cho lịch hẹn booking
+          const mappedBookings = bData.map((b: any) => ({
+            bookingId: b.bookingId || b.booking_id,
+            serviceType: b.serviceType || b.service_type,
+            status: b.status,
+            scheduledAt: b.scheduledAt || b.scheduled_at
+          }));
+          setCustomerBookings(mappedBookings);
+        } else {
+          setCustomerBookings([]);
+        }
+      } else {
+        setCustomerBookings([]);
+      }
     } catch (err) {
       console.error("Lỗi lấy thông tin chi tiết phụ:", err);
+      setCustomerVehicles([]);
+      setCustomerBookings([]);
     } finally {
       setLoadingDrawerData(false);
     }
@@ -126,7 +162,6 @@ export function AdminCustomerPage() {
     if (!confirmClose) return;
 
     try {
-      // Gửi trực tiếp trạng thái đảo ngược qua Request Param như Backend mong đợi
       const res = await window.fetch(`http://localhost:8080/api/admin/customers/${customerId}?status=${!currentStatus}`, {
         method: 'PUT'
       });
@@ -402,12 +437,14 @@ export function AdminCustomerPage() {
                           {customerBookings.length > 0 ? (
                             <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs space-y-4">
                               {customerBookings.map((b) => (
-                                <div key={b.bookingId} className="space-y-1">
+                                <div key={b.bookingId || Math.random().toString()} className="space-y-1">
                                   <div className="flex justify-between text-xs">
-                                    <span className="font-bold text-slate-700">{b.serviceType}</span>
-                                    <span className="text-green-600 font-semibold">{b.status}</span>
+                                    <span className="font-bold text-slate-700">{b.serviceType || 'Dịch vụ Autowash'}</span>
+                                    <span className="text-green-600 font-semibold">{b.status || 'Hoàn thành'}</span>
                                   </div>
-                                  <p className="text-[11px] text-slate-400">Lịch hẹn: {new Date(b.scheduledAt).toLocaleString('vi-VN')}</p>
+                                  <p className="text-[11px] text-slate-400">
+                                    Lịch hẹn: {b.scheduledAt ? new Date(b.scheduledAt).toLocaleString('vi-VN') : 'Vừa xong'}
+                                  </p>
                                 </div>
                               ))}
                             </div>
@@ -420,7 +457,7 @@ export function AdminCustomerPage() {
                   )}
                 </div>
 
-                {/* FOOTER DRAWER: THAY ĐỔI ĐỘNG CHỮ VÀ MÀU THEO TRẠNG THÁI KHÁCH HÀNG */}
+                {/* FOOTER DRAWER */}
                 <div className="p-4 border-t border-slate-100 bg-white flex gap-3">
                   {currentCustomer.isActive ? (
                     <button 
@@ -443,7 +480,7 @@ export function AdminCustomerPage() {
             </>
           )}
 
-          {/* --- --- POPUP MODAL: THÊM MỚI KHÁCH HÀNG TẠI QUẦY --- --- */}
+          {/* --- --- POPUP MODAL --- --- */}
           {isAddModalOpen && (
             <>
               <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50" onClick={() => setIsAddModalOpen(false)} />
