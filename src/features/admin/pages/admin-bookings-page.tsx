@@ -53,12 +53,15 @@ export function AdminBookingsPage() {
   const [newCarPlate, setNewCarPlate] = useState('')
   const [newCarModel, setNewCarModel] = useState('')
   const [newService, setNewService] = useState('BASIC')
+  
+  // STATE MỚI THÊM: Quản lý ngày giờ hẹn được chọn động từ Form POS
+  const [newScheduledAt, setNewScheduledAt] = useState<string>('')
 
-  // 🌟 STATE MỚI THÊM: Quản lý thông điệp nhận diện khách hàng qua Số điện thoại
+  // STATE MỚI THÊM: Quản lý thông điệp nhận diện khách hàng qua Số điện thoại
   const [phoneMessage, setPhoneMessage] = useState<{ text: string; isNew: boolean } | null>(null)
 
   // =========================================================================
-  // 🚀 ĐỒNG BỘ API: TẢI DANH SÁCH ĐẶT LỊCH THỰC TẾ TỪ POSTGRES (SUPABASE)
+  //  ĐỒNG BỘ API: TẢI DANH SÁCH ĐẶT LỊCH THỰC TẾ TỪ POSTGRES (SUPABASE)
   // =========================================================================
   const fetchBookings = async () => {
     setLoading(true)
@@ -112,8 +115,8 @@ export function AdminBookingsPage() {
         },
         body: JSON.stringify({
           status: newStatus 
-        })
-      })
+        }
+      )})
       
       if (res.ok) {
         setBookings(prev => prev.map(b => b.bookingId === id ? { ...b, status: newStatus } : b))
@@ -138,7 +141,7 @@ export function AdminBookingsPage() {
   }
 
   // =========================================================================
-  // 🌟 HÀM XỬ LÝ SỰ KIỆN: TRA CỨU SĐT ĐỘNG VÀ TỰ ĐIỀN HỘ THÔNG TIN (AUTO-FILL)
+  //  HÀM XỬ LÝ SỰ KIỆN: TRA CỨU SĐT ĐỘNG VÀ TỰ ĐIỀN HỘ THÔNG TIN (AUTO-FILL)
   // =========================================================================
   const handlePhoneChange = async (phoneVal: string) => {
     setNewCustPhone(phoneVal)
@@ -177,23 +180,21 @@ export function AdminBookingsPage() {
   }
 
   // =========================================================================
-  // ✍️ ĐỒNG BỘ API: GỬI ĐƠN TẠO MỚI (POS) LÊN SPRING BOOT BACKEND
+  //  ĐỒNG BỘ API: GỬI ĐƠN TẠO MỚI (POS) LÊN SPRING BOOT BACKEND
   // =========================================================================
   const handleCreateNewBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCustName || !newCarPlate || !newCarModel) return
+    if (!newScheduledAt) {
+      alert('Vui lòng chọn thời gian hẹn dịch vụ!')
+      return
+    }
 
     try {
       const token = localStorage.getItem('token')
       
-      // Định dạng ngày giờ Local không chứa ký tự Z để tránh lệch múi giờ 7 tiếng
-      const bookingDate = new Date()
-      bookingDate.setDate(bookingDate.getDate() + 1) // Hẹn ngày mai
-      
-      const year = bookingDate.getFullYear()
-      const month = String(bookingDate.getMonth() + 1).padStart(2, '0')
-      const day = String(bookingDate.getDate()).padStart(2, '0')
-      const formattedDate = `${year}-${month}-${day}T10:30:00`
+      // Đồng bộ định dạng thời gian động từ state (yyyy-MM-ddTHH:mm:ss) gửi lên Spring Boot
+      const formattedDate = `${newScheduledAt}:00`
 
       // Bốc động lấy ID xe xịn đang có dưới DB để bypass khóa ngoại quan hệ
       let activeVehicleId = "c524991d-e479-44e6-8657-969ef9ef7d00"
@@ -212,8 +213,8 @@ export function AdminBookingsPage() {
           serviceType: newService,      
           scheduledAt: formattedDate,   
           notes: `POS Admin: Khách ${newCustName} | Phone: ${newCustPhone || '0912222222'} | Biển số: ${newCarPlate.toUpperCase()} | Dòng xe: ${newCarModel}`
-        })
-      })
+        }
+      )})
 
       if (res.ok) {
         alert('Tạo lịch hẹn dịch vụ mới thành công!')
@@ -227,6 +228,7 @@ export function AdminBookingsPage() {
         setNewCarPlate('')
         setNewCarModel('')
         setNewService('BASIC')
+        setNewScheduledAt('')
       } else {
         const errData = await res.json()
         alert(`Không thể tạo đơn: ${errData.message || 'Lỗi kiểm tra dữ liệu'}`)
@@ -237,7 +239,7 @@ export function AdminBookingsPage() {
   }
 
   // =========================================================================
-  // 🌟 HÀM HELPER: BÓC TÁCH CHUỖI NOTES THÔNG MINH CHO CẢ TABLE VÀ DRAWER
+  //  HÀM HELPER: BÓC TÁCH CHUỖI NOTES THÔNG MINH CHO CẢ TABLE VÀ DRAWER
   // =========================================================================
   const getDisplayInfo = (booking: Booking) => {
     const isPos = booking.notes?.startsWith("POS Admin:")
@@ -496,7 +498,7 @@ export function AdminBookingsPage() {
                         <div>
                           <p className='text-xs font-bold text-slate-850'>{activeInfo.name}</p>
                           <p className='text-[11px] text-slate-455 font-semibold mt-0.5'>{activeInfo.phone}</p>
-                          <div className='mt-1.5'><Badge variant={getTierVariant(activeBooking.customerTier)}>{activeBooking.customerTier} MEMBER</Badge></div>
+                          <div className='mt-1.5'><Badge variant={getTierVariant(activeBooking.customerTier)}>{activeBooking.customerTier}</Badge></div>
                         </div>
                       </div>
                     </div>
@@ -544,7 +546,7 @@ export function AdminBookingsPage() {
                 <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className='bg-white rounded-2xl max-w-md w-full p-6 border border-slate-200 shadow-2xl space-y-4'>
                   <div className='flex justify-between items-center pb-2 border-b border-slate-100'>
                     <h4 className='text-xs font-bold uppercase tracking-tight text-slate-800'>Tạo mới Đơn dịch vụ Booking (POS)</h4>
-                    <button onClick={() => { setIsNewBookingOpen(false); setPhoneMessage(null); }} className='text-slate-450 hover:text-slate-600 text-xs font-bold cursor-pointer'>Đóng</button>
+                    <button onClick={() => { setIsNewBookingOpen(false); setPhoneMessage(null); setNewScheduledAt(''); }} className='text-slate-450 hover:text-slate-600 text-xs font-bold cursor-pointer'>Đóng</button>
                   </div>
 
                   <form onSubmit={handleCreateNewBookingSubmit} className='space-y-3 text-xs pt-1'>
@@ -596,6 +598,17 @@ export function AdminBookingsPage() {
                     </div>
 
                     <div>
+                      <label className='block text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1'>Thời gian hẹn rửa xe</label>
+                      <input 
+                        type='datetime-local' 
+                        required
+                        value={newScheduledAt} 
+                        onChange={(e) => setNewScheduledAt(e.target.value)} 
+                        className='w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-semibold focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors text-slate-700' 
+                      />
+                    </div>
+
+                    <div>
                       <label className='block text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1'>Chọn loại dịch vụ</label>
                       <select value={newService} onChange={(e) => setNewService(e.target.value)} className='w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-semibold focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors appearance-none cursor-pointer'>
                         <option value='BASIC'>Rửa xe tiêu chuẩn (BASIC)</option>
@@ -605,7 +618,7 @@ export function AdminBookingsPage() {
                     </div>
 
                     <div className='flex gap-2 pt-3'>
-                      <button type='button' onClick={() => { setIsNewBookingOpen(false); setPhoneMessage(null); }} className='flex-1 py-2 border border-slate-200 text-xs font-bold text-slate-600 rounded-xl hover:bg-slate-50 transition-colors'>Hủy bỏ</button>
+                      <button type='button' onClick={() => { setIsNewBookingOpen(false); setPhoneMessage(null); setNewScheduledAt(''); }} className='flex-1 py-2 border border-slate-200 text-xs font-bold text-slate-600 rounded-xl hover:bg-slate-50 transition-colors'>Hủy bỏ</button>
                       <button type='submit' className='flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg cursor-pointer'>Tạo Booking</button>
                     </div>
                   </form>
