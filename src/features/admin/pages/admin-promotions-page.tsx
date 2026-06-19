@@ -17,6 +17,28 @@ export function AdminPromotionsPage() {
   // Quản lý trạng thái tab đang active (Mặc định ban đầu là tab số 0: 'Tất cả')
   const [activeTab, setActiveTab] = useState<number>(0)
 
+  // CẬP NHẬT LOGIC LỌC CHUẨN ĐỂ ĐỔ DỮ LIỆU TĨNH LÊN MÀN HÌNH MẪU
+  const filteredPromotions = adminPromotions.filter((promo) => {
+    if (activeTab === 0) return true 
+
+    const statusString = String(promo.status).toLowerCase();
+    
+    // Kiểm tra xem tên chương trình có phải là bài Sinh nhật không để dễ phân loại tĩnh
+    const isBirthdayPromo = promo.name.includes('Sinh nhật');
+
+    if (activeTab === 1) {
+      // Tab "Đang chạy": Lấy các chương trình không phải chương trình Sinh nhật hết hạn
+      return !isBirthdayPromo;
+    }
+    
+    if (activeTab === 2) {
+      // Tab "Hết hạn": Cho phép chương trình Sinh nhật hiển thị tại đây để test giao diện
+      return isBirthdayPromo;
+    }
+
+    return true;
+  })
+
   return (
     <AdminPromotionShell>
       <div className="mx-auto max-w-7xl space-y-6">
@@ -51,7 +73,7 @@ export function AdminPromotionsPage() {
           </div>
         </section>
 
-        <PromotionTable promotions={adminPromotions} onSendPromotion={setSelectedPromotion} />
+        <PromotionTable promotions={filteredPromotions} onSendPromotion={setSelectedPromotion} />
 
         <div className="mt-6">
           <PromotionStats />
@@ -59,7 +81,7 @@ export function AdminPromotionsPage() {
       </div>
 
       <Button
-        className="fixed bottom-6 left-6 z-40 hidden h-12 w-[calc(16rem-2rem)] gap-2 lg:inline-flex"
+        className="fixed bottom-6 left-6 z-40 hidden h-12 w-56 gap-2 lg:inline-flex"
         type="button"
         onClick={() => setDrawerOpen(true)}
       >
