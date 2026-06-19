@@ -13,6 +13,9 @@ const filterTabs = ['Tất cả', 'Đang chạy', 'Hết hạn']
 export function AdminPromotionsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedPromotion, setSelectedPromotion] = useState<AdminPromotion | null>(null)
+  
+  // Quản lý trạng thái tab đang active (Mặc định ban đầu là tab số 0: 'Tất cả')
+  const [activeTab, setActiveTab] = useState<number>(0)
 
   return (
     <AdminPromotionShell>
@@ -30,11 +33,12 @@ export function AdminPromotionsPage() {
               {filterTabs.map((tab, index) => (
                 <button
                   className={cn(
-                    'rounded-md px-4 py-2 text-xs font-medium leading-4 text-on-surface-variant hover:bg-surface-container',
-                    index === 0 && 'bg-[#a4c9ff] text-primary',
+                    'rounded-md px-4 py-2 text-xs font-medium leading-4 text-on-surface-variant hover:bg-surface-container transition-colors',
+                    activeTab === index && 'bg-[#a4c9ff] text-primary font-bold',
                   )}
                   key={tab}
                   type="button"
+                  onClick={() => setActiveTab(index)}
                 >
                   {tab}
                 </button>
