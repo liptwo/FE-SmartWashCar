@@ -1,30 +1,66 @@
 import { useState } from 'react'
 import { Send, X, Info } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
-import type { AdminPromotion } from '@/features/admin/data/admin-promotions'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 
 type ConfirmSendModalProps = {
   onClose: () => void
-  promotion: AdminPromotion | null
+  promotion: any | null // Đồng bộ kiểu any linh hoạt giống trang quản lý ngoài
 }
 
 export function ConfirmSendModal({ onClose, promotion }: ConfirmSendModalProps) {
+  const [sending, setSending] = useState(false)
+
   if (!promotion) {
     return null
   }
+
+  // 🌟 HÀM KẾT NỐI API BẮN THÔNG BÁO KHUYẾN MÃI DOWN BACKEND SPRING BOOT
+  const handleSendPromotion = async () => {
+    setSending(true)
+    try {
+      // Lấy chính xác accessToken đồng bộ với cơ chế xác thực hệ thống của Khang
+      const token = localStorage.getItem('accessToken')
+
+      const res = await fetch(`http://localhost:8080/api/admin/promotions/${promotion.id}/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      })
+
+      if (res.ok) {
+        alert(`Đã kích hoạt gửi chiến dịch "${promotion.name}" thành công tới hệ thống! ✈️`)
+        onClose()
+      } else {
+        const errText = await res.text()
+        alert(`Lỗi khi yêu cầu gửi ưu đãi: ${errText}`)
+      }
+    } catch (error) {
+      console.error('Lỗi kết nối API gửi khuyến mãi:', error)
+      alert('Không thể kết nối đến máy chủ Backend.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  // Chuẩn hóa hiển thị targetTiers kể cả khi là mảng hay chuỗi từ Postgres đổ lên
+  const displayTiers = Array.isArray(promotion.targetTiers)
+    ? promotion.targetTiers.join(', ')
+    : String(promotion.targetTiers || 'MEMBER')
 
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-black/40 p-6 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-xl bg-surface p-6 shadow-2xl">
         <div className="mb-4 flex items-center gap-4">
           <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
-            <Send size={28} />
+            <Send size={28} className={sending ? "animate-bounce" : ""} />
           </span>
           <div>
             <h3 className="text-xl font-medium leading-7 text-on-surface">Xác nhận gửi ưu đãi</h3>
-            <p className="text-sm leading-5 text-on-surface-variant">Hành động này không thể hoàn tác.</p>
+            <p className="text-sm leading-5 text-on-surface-variant">Hệ thống sẽ gửi thông báo đến các khách hàng mục tiêu.</p>
           </div>
         </div>
 
@@ -36,23 +72,17 @@ export function ConfirmSendModal({ onClose, promotion }: ConfirmSendModalProps) 
           <div className="mb-2 flex justify-between gap-4">
             <span className="text-xs leading-4 text-on-surface-variant">Đối tượng (Tier):</span>
             <span className="text-right text-xs font-medium leading-4 text-primary">
-              {promotion.targetTiers.join(', ')}
-            </span>
-          </div>
-          <div className="mt-2 flex justify-between gap-4 border-t border-outline-variant pt-2">
-            <span className="text-xs leading-4 text-on-surface-variant">Tổng số khách hàng:</span>
-            <span className="text-xs font-medium leading-4 text-on-surface">
-              {promotion.code === 'PROMO-001' ? '120' : '450'} khách hàng
+              {displayTiers}
             </span>
           </div>
         </div>
 
         <div className="flex gap-4">
-          <Button className="flex-1" type="button" variant="outline" onClick={onClose}>
+          <Button className="flex-1" type="button" variant="outline" onClick={onClose} disabled={sending}>
             Hủy
           </Button>
-          <Button className="flex-1" type="button" onClick={onClose}>
-            Gửi ngay tới khách hàng
+          <Button className="flex-1" type="button" onClick={handleSendPromotion} disabled={sending}>
+            {sending ? "Đang gửi..." : "Gửi ngay tới khách hàng"}
           </Button>
         </div>
       </div>
@@ -105,7 +135,7 @@ export function CreatePromotionDrawer({ onClose, open, onSuccess }: CreatePromot
 
     setSubmitting(true)
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('accessToken')
 
       // Đóng gói request chuẩn định dạng Java nhận diện
       const requestBody = {
@@ -114,7 +144,6 @@ export function CreatePromotionDrawer({ onClose, open, onSuccess }: CreatePromot
         value: Number(formData.value),
         usageLimit: Number(formData.usageLimit),
         targetTiers: formData.targetTiers.length > 0 ? formData.targetTiers.join(',') : 'MEMBER',
-        // Vì Backend đã có @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm") nên gửi trực tiếp chuỗi html datetime-local xuống cực kỳ an toàn
         startsAt: formData.startsAt ? formData.startsAt : null,
         endsAt: formData.endsAt ? formData.endsAt : null
       }
@@ -123,7 +152,7 @@ export function CreatePromotionDrawer({ onClose, open, onSuccess }: CreatePromot
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify(requestBody)
       })
@@ -261,7 +290,7 @@ export function CreatePromotionDrawer({ onClose, open, onSuccess }: CreatePromot
                   </div>
                 </div>
 
-                {/* Ô NHẬP NGÀY THÁNG (Đổi từ type="date" sang "datetime-local" để chọn được cả giờ phút sắc nét như DB) */}
+                {/* Ô NHẬP NGÀY THÁNG */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="grid gap-3 text-sm font-medium leading-4 text-on-surface">
                     Ngày bắt đầu
