@@ -17,12 +17,12 @@ export function AdminPromotionsPage() {
   // Quản lý trạng thái tab đang active
   const [activeTab, setActiveTab] = useState<number>(0)
 
-  // STATE MỚI THÊM: Lưu danh sách chương trình khuyến mãi thực tế từ Database và trạng thái loading
+  // STATE LƯU TRỮ: Danh sách chương trình khuyến mãi thực tế từ Database và trạng thái loading
   const [promotions, setPromotions] = useState<AdminPromotion[]>([])
   const [loading, setLoading] = useState<boolean>(false)
 
   // =========================================================================
-  //  ĐỒNG BỘ API + MAP DỮ LIỆU ĐỂ HIỂN THỊ LÊN BẢNG (FIX LỖI LỒNG OBJECT USAGE)
+  // ĐỒNG BỘ API + MAP DỮ LIỆU ĐỂ HIỂN THỊ LÊN BẢNG VÀ BIỂU ĐỒ (LỌC TRÙNG THEO TÊN)
   // =========================================================================
   const fetchPromotions = async () => {
     setLoading(true)
@@ -50,20 +50,19 @@ export function AdminPromotionsPage() {
       if (res.ok) {
         const data = await res.json()
         
-        // BẮP CẦU DỮ LIỆU: Convert dữ liệu Backend Postgres sang định dạng Component Table đang xài
-        const formattedData = data.map((item: any) => {
+        // 1. BẮP CẦU DỮ LIỆU: Convert dữ liệu Backend Postgres sang định dạng các Component con cần xài
+        const mappedData = data.map((item: any) => {
           
-          // XỬ LÝ AN TOÀN CHO TRƯỜNG targetTiers (Ép từ chuỗi DB thành Mảng cho FE render)
+          // XỬ LÝ AN TOÀN CHO TRƯỜNG targetTiers (Ép từ chuỗi DB thành Mảng)
           let finalTiers: string[] = []
           if (Array.isArray(item.targetTiers)) {
             finalTiers = item.targetTiers
           } else if (typeof item.targetTiers === 'string' && item.targetTiers.trim() !== '') {
-            // Nếu lưu chuỗi dạng "GOLD, PLATINUM" thì cắt ra, nếu chỉ có "GOLD" thì bọc vào mảng
             finalTiers = item.targetTiers.includes(',')
               ? item.targetTiers.split(',').map((t: string) => t.trim())
               : [item.targetTiers.trim()]
           } else {
-            finalTiers = ['ALL'] // Mặc định nếu null/rỗng
+            finalTiers = ['ALL']
           }
 
           // Lấy giá trị số lượng thực tế từ các trường phẳng dưới DB
@@ -72,7 +71,8 @@ export function AdminPromotionsPage() {
 
           return {
             ...item,
-            id: item.promoId || item.id || `PROMO-${Math.random()}`,
+            // Cố định ID bằng promoId hoặc rải tên chữ thường phòng trường hợp Backend trả về lệch kiểu viết
+            id: item.promoId || item.promoid || item.id || `PROMO-${item.name}`,
             
             // Đút mảng chuẩn vào đây giúp cấu hình render .map() không bao giờ crash
             targetTiers: finalTiers,
@@ -83,7 +83,7 @@ export function AdminPromotionsPage() {
             // Chuyển đổi tên trường promoType từ DB sang type
             type: item.promoType || item.type || 'DISCOUNT',
             
-            //  VÁ LỖI CRASH 'current': Bọc cấu hình lồng chính xác để dòng 71 trong Component Table đọc được
+            // VÁ LỖI CRASH 'current': Bọc cấu hình lồng chính xác để dòng 71 trong Component Table đọc được
             usage: {
               current: currentCount,
               limit: limitCount
@@ -95,7 +95,13 @@ export function AdminPromotionsPage() {
           }
         })
 
-        setPromotions(formattedData)
+        const uniqueData = mappedData.filter(
+          (value: any, index: number, self: any[]) =>
+            self.findIndex((t: any) => t.name === value.name) === index
+        )
+
+        // Đổ mảng sạch sẽ không trùng lặp vào State để hiển thị công bằng
+        setPromotions(uniqueData)
       }
     } catch (error) {
       console.error('Lỗi khi fetch danh sách khuyến mãi:', error)
@@ -143,7 +149,7 @@ export function AdminPromotionsPage() {
           </div>
         </section>
 
-        {/* ĐỒNG BỘ HIỂN THỊ DỮ LIỆU ĐỘNG */}
+        {/* ĐỒNG BỘ HIỂN THỊ DỮ LIỆU ĐỘNG BẢNG */}
         {loading ? (
           <div className="py-12 text-center text-xs font-semibold text-slate-400 animate-pulse bg-white border border-slate-200 rounded-2xl">
             Đang tải dữ liệu khuyến mãi từ hệ thống...
@@ -152,8 +158,9 @@ export function AdminPromotionsPage() {
           <PromotionTable promotions={promotions} onSendPromotion={setSelectedPromotion} />
         )}
 
+        {/* ĐỒNG BỘ HIỂN THỊ DỮ LIỆU ĐỘNG BIỂU ĐỒ THỐNG KÊ */}
         <div className="mt-6">
-          <PromotionStats />
+          <PromotionStats promotions={promotions} />
         </div>
       </div>
 
@@ -167,7 +174,7 @@ export function AdminPromotionsPage() {
       </Button>
 
       <ConfirmSendModal promotion={selectedPromotion} onClose={() => setSelectedPromotion(null)} />
-      <CreatePromotionDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <CreatePromotionDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} onSuccess={fetchPromotions}/>
     </AdminPromotionShell>
   )
 }
