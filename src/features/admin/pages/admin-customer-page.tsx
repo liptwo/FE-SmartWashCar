@@ -49,30 +49,44 @@ export function AdminCustomerPage() {
   const [formError, setFormError] = useState('');
 
   // --- STATES BỘ LỌC TÌM KIẾM ---
-  const [selectedTierFilter, setSelectedTierFilter] = useState<{ [key: string]: boolean }>({
-    MEMBER: true, SILVER: true, GOLD: true, PLATINUM: true
-  });
+  // Đổi từ cơ chế multi-checkbox sang cấu trúc Chọn 1 Tab Tier tương tự như phần Promotion để khớp 100% với Backend
+  const [activeTierTab, setActiveTierTab] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 1. HÀM LẤY DANH SÁCH KHÁCH HÀNG CHÍNH
+  // 1. 🌟 HÀM LẤY DANH SÁCH KHÁCH HÀNG ĐÃ ĐỒNG BỘ THAM SỐ XUỐNG DB
   const fetchCustomers = async () => {
     try {
       if (customers.length === 0) setLoading(true);
-      const res = await window.fetch('http://localhost:8080/api/admin/customers');
+      
+      // Xây dựng URL động truyền tham số search và tier xuống JPA Repository
+      const url = new URL('http://localhost:8080/api/admin/customers');
+      if (searchQuery.trim() !== '') {
+        url.searchParams.append('search', searchQuery.trim());
+      }
+      if (activeTierTab !== 'ALL') {
+        url.searchParams.append('tier', activeTierTab);
+      }
+
+      const res = await window.fetch(url.toString());
       const data = await res.json();
       setCustomers(data);
     } catch (err) {
-      console.error("Lỗi đồng bộ API:", err);
+      console.error("Lỗi đồng bộ API khách hàng:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Tự động kích hoạt gọi lại API mỗi khi Khang gõ chữ tìm kiếm hoặc chuyển đổi giữa các Tab Tier
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    const delayDebounceFn = setTimeout(() => {
+      fetchCustomers();
+    }, 300); // 300ms Debounce để tránh spam request liên tục khi gõ phím nhanh
 
-  // 2. HÀM TỰ ĐỘNG GỌI API CHI TIẾT XE & LỊCH SỬ KHI ẤN CON MẮT - ĐÃ CÓ MAPPING SẠCH LỖI KHỚP ĐỊNH DẠNG
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, activeTierTab]);
+
+  // 2. HÀM TỰ ĐỘNG GỌI API CHI TIẾT XE & LỊCH SỬ KHI ẤN CON MẮT
   const handleOpenDrawer = async (customerId: string) => {
     setSelectedCustomerId(customerId);
     setActiveTab('info');
@@ -86,7 +100,6 @@ export function AdminCustomerPage() {
       if (vehiclesRes.ok) {
         const vData = await vehiclesRes.json();
         if (Array.isArray(vData)) {
-          // Xử lý map động kiểm tra cả cấu trúc CamelCase và SnakeCase từ Postgres đổ lên
           const mappedVehicles = vData.map((v: any) => ({
             vehicleId: v.vehicleId || v.vehicle_id,
             brand: v.brand,
@@ -105,7 +118,6 @@ export function AdminCustomerPage() {
       if (historyRes.ok) {
         const bData = await historyRes.json();
         if (Array.isArray(bData)) {
-          // Xử lý map động kiểm tra cấu trúc cho lịch hẹn booking
           const mappedBookings = bData.map((b: any) => ({
             bookingId: b.bookingId || b.booking_id,
             serviceType: b.serviceType || b.service_type,
@@ -143,6 +155,7 @@ export function AdminCustomerPage() {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
+        alert('Thêm khách hàng mới tại quầy thành công! 🎉');
         setIsAddModalOpen(false);
         setFormData({ fullName: '', phone: '', email: '', password: 'password123' });
         fetchCustomers();
@@ -155,7 +168,7 @@ export function AdminCustomerPage() {
     }
   };
 
-  // 4. LOGIC XỬ LÝ ĐẢO TRẠNG THÁI KHÓA / KÍCH HOẠT LẠI (SỬ DỤNG PARAM ?status= CHUẨN XỊN CHỐNG NULL)
+  // 4. LOGIC XỬ LÝ ĐẢO TRẠNG THÁI KHÓA / KÍCH HOẠT LẠI
   const handleDisableCustomer = async (customerId: string, name: string, currentStatus: boolean) => {
     const actionText = currentStatus ? "VÔ HIỆU HÓA" : "KÍCH HOẠT LẠI";
     const confirmClose = window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của khách hàng "${name}"?`);
@@ -179,14 +192,6 @@ export function AdminCustomerPage() {
   };
 
   const currentCustomer = customers.find(c => c.customerId === selectedCustomerId);
-
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = 
-      customer.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.phone?.replace(/\s+/g, '').includes(searchQuery.replace(/\s+/g, ''));
-    const matchesTier = selectedTierFilter[customer.tier] === true;
-    return matchesSearch && matchesTier;
-  });
 
   if (loading) {
     return (
@@ -215,7 +220,7 @@ export function AdminCustomerPage() {
             <div>
               <h1 className="text-2xl font-bold text-slate-800">Quản lý khách hàng</h1>
               <p className="text-sm text-slate-500">
-                Hiển thị: <span className="font-semibold text-blue-900">{filteredCustomers.length}</span> / {customers.length} khách hàng hệ thống
+                Hiển thị: <span className="font-semibold text-blue-900">{customers.length}</span> khách hàng theo bộ lọc
               </p>
             </div>
             <div className="flex gap-3">
@@ -231,30 +236,33 @@ export function AdminCustomerPage() {
             </div>
           </div>
 
-          {/* FILTERBAR */}
+          {/* FILTERBAR DẠNG TAB ĐỒNG BỘ CAO CẤP */}
           <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-wrap items-center justify-between gap-4 mb-4">
             <div className="relative flex-1 min-w-xs">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input 
                 type="text" 
-                placeholder="Tìm theo tên hoặc số điện thoại..." 
+                placeholder="Tìm nhanh theo tên hoặc số điện thoại..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition"
               />
             </div>
-            <div className="flex items-center gap-4 text-sm text-slate-600">
-              <span className="font-medium text-slate-500">Hạng thẻ:</span>
-              {Object.keys(selectedTierFilter).map((tier) => (
-                <label key={tier} className="flex items-center gap-2 cursor-pointer select-none">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedTierFilter[tier]}
-                    onChange={(e) => setSelectedTierFilter({...selectedTierFilter, [tier]: e.target.checked})}
-                    className="rounded border-slate-300 text-blue-900 focus:ring-blue-900 w-4 h-4"
-                  />
-                  <span className="text-xs font-semibold">{tier}</span>
-                </label>
+            
+            {/* Thanh Tab chuyển phân hạng giống hệt trang Promotion */}
+            <div className="flex bg-slate-100 p-1 rounded-lg gap-1">
+              {['ALL', 'MEMBER', 'SILVER', 'GOLD', 'PLATINUM'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTierTab(tab)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                    activeTierTab === tab 
+                      ? 'bg-blue-900 text-white shadow-xs' 
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {tab === 'ALL' ? 'Tất cả' : tab}
+                </button>
               ))}
             </div>
           </div>
@@ -268,13 +276,13 @@ export function AdminCustomerPage() {
                   <th className="p-4">Khách hàng</th>
                   <th className="p-4">Số điện thoại</th>
                   <th className="p-4">Hạng</th>
-                  <th className="p-4">Điểm</th>
+                  <th className="p-4">Điểm tích lũy</th>
                   <th className="p-4 text-center">Số lần rửa</th>
                   <th className="p-4 w-16">Chi tiết</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
-                {filteredCustomers.map((customer) => (
+                {customers.map((customer) => (
                   <tr key={customer.customerId} className={`hover:bg-slate-50 transition ${selectedCustomerId === customer.customerId ? 'bg-blue-50/50' : ''}`}>
                     <td className="p-4">
                       <input 
@@ -297,7 +305,8 @@ export function AdminCustomerPage() {
                     <td className="p-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                         customer.tier === 'GOLD' ? 'bg-amber-100 text-amber-700' :
-                        customer.tier === 'PLATINUM' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'
+                        customer.tier === 'PLATINUM' ? 'bg-purple-100 text-purple-700' : 
+                        customer.tier === 'SILVER' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
                       }`}>
                         {customer.tier}
                       </span>
@@ -337,15 +346,15 @@ export function AdminCustomerPage() {
                   <div className="flex items-start gap-4 mt-2">
                     <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-xl relative">
                       {currentCustomer.fullName ? currentCustomer.fullName.substring(0, 2).toUpperCase() : 'KH'}
-                      <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></span>
+                      <span className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${currentCustomer.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
                     </div>
                     <div>
                       <h2 className="text-xl font-bold text-slate-800">{currentCustomer.fullName}</h2>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                        <span className="bg-blue-900 text-white text-[10px] font-bold px-2 py-0.5 rounded">
                           {currentCustomer.tier}
                         </span>
-                        <span className="text-xs text-slate-400">• {currentCustomer.totalPoints} điểm tích lũy</span>
+                        <span className="text-xs text-slate-400">• {currentCustomer.totalPoints} điểm khả dụng</span>
                       </div>
                     </div>
                   </div>
@@ -480,7 +489,7 @@ export function AdminCustomerPage() {
             </>
           )}
 
-          {/* --- --- POPUP MODAL --- --- */}
+          {/* --- POPUP MODAL THÊM KHÁCH HÀNG --- */}
           {isAddModalOpen && (
             <>
               <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50" onClick={() => setIsAddModalOpen(false)} />
