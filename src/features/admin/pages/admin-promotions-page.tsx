@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { AdminPromotionShell } from '@/features/admin/components/admin-promotion-shell'
+import { AdminTopbar } from '@/features/admin/components/admin-topbar' // 🌟 Import Topbar để gộp ô tìm kiếm
 import { ConfirmSendModal, CreatePromotionDrawer } from '@/features/admin/components/promotion-dialogs'
 import { PromotionStats } from '@/features/admin/components/promotion-stats'
 import { PromotionTable } from '@/features/admin/components/promotion-table'
@@ -16,28 +17,37 @@ export function AdminPromotionsPage() {
   // Quản lý trạng thái tab đang active
   const [activeTab, setActiveTab] = useState<number>(0)
 
+  // 🌟 STATE MỚI QUẢN LÝ Ô TÌM KIẾM LIÊN THÔNG VỚI TOPBAR
+  const [searchQuery, setSearchQuery] = useState<string>('')
+
   // STATE LƯU TRỮ: Danh sách chương trình khuyến mãi thực tế từ Database
   const [promotions, setPromotions] = useState<any[]>([])
   const [loading, setLoading] = useState<boolean>(false)
 
   // =========================================================================
-  // ĐỒNG BỘ API + THUẬT TOÁN SẮP XẾP MỚI NHẤT & GỘP TRÙNG THEO TÊN THÔNG MINH
+  // ĐỒNG BỘ API TÌM KIẾM THÔNG MINH + SẮP XẾP VÀ GỘP TRÙNG REAL-TIME THEO TÊN
   // =========================================================================
   const fetchPromotions = async () => {
     setLoading(true)
     try {
-      let url = 'http://localhost:8080/api/admin/promotions'
+      // Thiết lập URL động cấu trúc SearchParams mượt mà
+      const url = new URL('http://localhost:8080/api/admin/promotions')
       
       const statusMap = ['ALL', 'ACTIVE', 'EXPIRED']
       const paramStatus = statusMap[activeTab]
       
       if (paramStatus && paramStatus !== 'ALL') {
-        url += `?status=${paramStatus}`
+        url.searchParams.append('status', paramStatus)
+      }
+
+      // 🌟 THÊM: Nếu có từ khóa gõ trên Topbar, truyền trực tiếp params search xuống database
+      if (searchQuery.trim() !== '') {
+        url.searchParams.append('search', searchQuery.trim())
       }
 
       const token = localStorage.getItem('accessToken')
 
-      const res = await fetch(url, {
+      const res = await fetch(url.toString(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +73,6 @@ export function AdminPromotionsPage() {
           const currentCount = item.usageCount !== undefined ? item.usageCount : 0
           const limitCount = item.usageLimit !== undefined ? item.usageLimit : 100
           
-          // Nhận diện cả trường 'active' (Lombok sinh ra) lẫn 'isActive' gửi từ DB
           const isPromoActive = 
             item.active === true || 
             String(item.active) === 'true' || 
@@ -83,19 +92,16 @@ export function AdminPromotionsPage() {
             },
             usageLimit: limitCount,
             usageCount: currentCount,
-            // 🌟 Ép kiểu thời gian an toàn để phục vụ sắp xếp thứ tự hiển thị
             createdAt: item.createdAt || new Date().toISOString()
           }
         })
 
-        // 🌟 BƯỚC 1: SẮP XẾP DANH SÁCH THEO THỜI GIAN TẠO (CREATED_AT) MỚI NHẤT LÊN ĐẦU
+        // SẮP XẾP DANH SÁCH THEO THỜI GIAN TẠO MỚI NHẤT LÊN ĐẦU
         const sortedData = mappedData.sort((a: any, b: any) => {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         })
 
-        // 🌟 BƯỚC 2: GỘP TRÙNG THEO TÊN
-        // Vì bản ghi có thời gian mới nhất (hoặc vừa tạo) đã được đẩy lên đầu mảng ở Bước 1,
-        // nên findIndex chắc chắn sẽ giữ lại bản ghi chuẩn này và loại bỏ bản ghi cũ mang tên trùng.
+        // GỘP TRÙNG THEO TÊN THÔNG MINH BẢO VỆ DỮ LIỆU MỚI NHẤT
         const uniqueData = sortedData.filter(
           (value: any, index: number, self: any[]) =>
             self.findIndex((t: any) => t.name === value.name) === index
@@ -110,14 +116,11 @@ export function AdminPromotionsPage() {
     }
   }
 
-  // =========================================================================
   // XỬ LÝ LẬT TRẠNG THÁI TOGGLE SWITCH (OPTIMISTIC UPDATE)
-  // =========================================================================
   const handleToggleStatus = async (id: string) => {
     const token = localStorage.getItem('accessToken')
     console.log("=== TOKEN ĐANG GỬI ĐI LÀ ===", token)
 
-    // Thực hiện lật trạng thái ngay tại UI để giữ Switch đứng im
     setPromotions((prevPromotions) =>
       prevPromotions.map((promo) =>
         promo.id === id
@@ -141,13 +144,16 @@ export function AdminPromotionsPage() {
 
       const res = await fetch(`http://localhost:8080/api/admin/promotions/${id}/toggle`, {
         method: 'PATCH',
-        headers: headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
       })
 
       if (!res.ok) {
         const errText = await res.text()
         alert(`Lỗi đổi trạng thái từ hệ thống: ${errText}`)
-        fetchPromotions() // Chỉ gọi tải lại dữ liệu từ DB (Roll-back) khi thực sự có lỗi xảy ra
+        fetchPromotions() 
       }
     } catch (error) {
       console.error('Lỗi kết nối gạt switch trạng thái:', error)
@@ -156,13 +162,25 @@ export function AdminPromotionsPage() {
     }
   }
 
-  // Tự động gọi lại API nạp dữ liệu mỗi khi Admin nhấn chuyển Tab lọc trạng thái
+  // 🌟 ĐỒNG BỘ: Kích hoạt tải dữ liệu liên thông mỗi khi gõ phím ô Search (kèm Debounce 300ms chống spam) hoặc đổi Tab
   useEffect(() => {
-    fetchPromotions()
-  }, [activeTab])
+    const handler = setTimeout(() => {
+      fetchPromotions()
+    }, 300)
+
+    return () => clearTimeout(handler)
+  }, [activeTab, searchQuery])
 
   return (
     <AdminPromotionShell>
+      {/* 🌟 ĐỒNG BỘ ĐẦU Ô TÌM KIẾM TOPBAR: Gắn trực tiếp state phục vụ tìm kiếm toàn trang */}
+      <AdminTopbar 
+        searchPlaceholder="Tìm kiếm chiến dịch chương trình..."
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        actions={null}
+      />
+
       <div className="mx-auto max-w-7xl space-y-6">
         <section className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
@@ -207,6 +225,7 @@ export function AdminPromotionsPage() {
           />
         )}
 
+        {/* 🌟 LIÊN THÔNG BIỂU ĐỒ CHART: Đổ mảng promotions chứa usageCount thực tế xuống component stats vẽ đồ thị */}
         <div className="mt-6">
           <PromotionStats promotions={promotions} />
         </div>
