@@ -1,17 +1,25 @@
-import { useState } from 'react'
-import { Plus, Edit2, Trash2, Tag, BookOpen, User, Calendar, Check, X, Eye } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Edit2, Trash2, Tag } from 'lucide-react' // Đã dọn dẹp các icon thừa không dùng đến
 import { motion, AnimatePresence } from 'motion/react'
 import toast from 'react-hot-toast'
 import { AdminSidebar } from '@/features/admin/components/admin-sidebar'
+import { AdminTopbar } from '@/features/admin/components/admin-topbar'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent } from '@/shared/components/ui/card'
-import { Input } from '@/shared/components/ui/input'
-import { mockArticles, type Article } from '@/features/articles/data/mock-articles'
+import { Card } from '@/shared/components/ui/card' // Đã bỏ CardContent thừa
+import { cn } from '@/shared/lib/utils'
+import { type Article } from '@/features/articles/data/mock-articles'
 
-export function AdminArticlesPage() {
-  const [articles, setArticles] = useState<Article[]>(mockArticles)
+const filterTabs = ['Tất cả', 'Công khai', 'Bản nháp']
+
+export function AdminArticlesPage() { 
+  const [articles, setArticles] = useState<Article[]>([])
+  const [loading, setLoading] = useState<boolean>(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingArticle, setEditingArticle] = useState<Article | null>(null)
+
+  // BỘ LỌC SEARCH & TAB TRẠNG THÁI
+  const [activeTab, setActiveTab] = useState<number>(0)
+  const [searchQuery, setSearchQuery] = useState<string>('')
 
   // Form states
   const [title, setTitle] = useState('')
@@ -21,6 +29,51 @@ export function AdminArticlesPage() {
   const [category, setCategory] = useState<'VEHICLE' | 'SERVICE'>('VEHICLE')
   const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED'>('PUBLISHED')
   const [author, setAuthor] = useState('')
+
+  // Hàm fetch bài viết từ database backend
+  const fetchArticles = async () => {
+    setLoading(true)
+    try {
+      const url = new URL('http://localhost:8080/api/admin/articles')
+      
+      const statusMap = ['ALL', 'PUBLISHED', 'DRAFT']
+      const paramStatus = statusMap[activeTab]
+      if (paramStatus && paramStatus !== 'ALL') {
+        url.searchParams.append('status', paramStatus)
+      }
+
+      if (searchQuery.trim() !== '') {
+        url.searchParams.append('search', searchQuery.trim())
+      }
+
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        const sortedData = data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        setArticles(sortedData)
+      }
+    } catch (error) {
+      console.error('Lỗi nạp dữ liệu bài viết thật:', error)
+      toast.error('Không thể tải danh sách bài viết từ server')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchArticles()
+    }, 300)
+    return () => clearTimeout(delayDebounceFn)
+  }, [activeTab, searchQuery])
 
   // Handle open modal for create
   const handleOpenCreate = () => {
@@ -48,54 +101,50 @@ export function AdminArticlesPage() {
     setIsModalOpen(true)
   }
 
-  // Handle save (Create or Update)
-  const handleSave = (e: React.FormEvent) => {
+  // Hàm lưu dữ liệu
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title || !summary || !content || !author || !coverImage) {
       toast.error('Vui lòng điền đầy đủ các thông tin cần thiết')
       return
     }
 
-    if (editingArticle) {
-      // Update
-      const updatedArticles = articles.map((art) => {
-        if (art.id === editingArticle.id) {
-          return {
-            ...art,
-            title,
-            slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-            summary,
-            content,
-            coverImage,
-            category,
-            status,
-            author,
-            updatedAt: new Date().toISOString()
-          }
-        }
-        return art
-      })
-      setArticles(updatedArticles)
-      toast.success('Cập nhật bài viết thành công!')
-    } else {
-      // Create
-      const newArticle: Article = {
-        id: `art-${Date.now()}`,
-        title,
-        slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-        summary,
-        content,
-        coverImage,
-        category,
-        status,
-        author,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      setArticles([newArticle, ...articles])
-      toast.success('Tạo bài viết mới thành công!')
+    const token = localStorage.getItem('accessToken')
+    const articlePayload = {
+      title,
+      summary,
+      content,
+      coverImage,
+      category,
+      status,
+      author
     }
-    setIsModalOpen(false)
+
+    if (editingArticle) {
+      toast.error('Tính năng cập nhật bài viết đang cấu hình phân quyền!')
+    } else {
+      try {
+        const res = await fetch('http://localhost:8080/api/admin/articles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
+          body: JSON.stringify(articlePayload)
+        })
+
+        if (res.ok) {
+          toast.success('Đăng bài viết mới thành công! 🚀')
+          setIsModalOpen(false)
+          fetchArticles()
+        } else {
+          const errText = await res.text()
+          toast.error(`Lỗi từ hệ thống: ${errText}`)
+        }
+      } catch (err) {
+        toast.error('Lỗi kết nối máy chủ!')
+      }
+    }
   }
 
   // Handle Delete
@@ -103,24 +152,42 @@ export function AdminArticlesPage() {
     if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này không?')) {
       const filtered = articles.filter((art) => art.id !== id)
       setArticles(filtered)
-      toast.success('Đã xóa bài viết')
+      toast.success('Đã xóa bài viết tạm thời')
     }
   }
 
-  // Toggle Publish Status
-  const toggleStatus = (article: Article) => {
-    const updated = articles.map((art) => {
-      if (art.id === article.id) {
-        const nextStatus = art.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
-        toast.success(`Đã chuyển trạng thái sang ${nextStatus === 'PUBLISHED' ? 'Công khai' : 'Bản nháp'}`)
-        return { ...art, status: nextStatus }
+  // Luồng lật đổi trạng thái
+  const toggleStatus = async (article: Article) => {
+    const token = localStorage.getItem('accessToken')
+    const nextStatus = article.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
+
+    setArticles((prev) =>
+      prev.map((art) =>
+        art.id === article.id ? { ...art, status: nextStatus } : art
+      )
+    )
+    toast.success(`Chuyển trạng thái sang ${nextStatus === 'PUBLISHED' ? 'Công khai' : 'Bản nháp'}`)
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/admin/articles/${article.id}/toggle`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      })
+      if (!res.ok) {
+        toast.error('Đồng bộ trạng thái thất bại, đang khôi phục dữ liệu...')
+        fetchArticles()
       }
-      return art
-    })
-    setArticles(updated)
+    } catch (error) {
+      console.error(error)
+      fetchArticles()
+    }
   }
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Vừa xong'
     const date = new Date(dateString)
     return date.toLocaleDateString('vi-VN', {
       day: '2-digit',
@@ -132,9 +199,15 @@ export function AdminArticlesPage() {
   return (
     <div className="min-h-screen bg-background text-on-surface">
       <AdminSidebar activeItem="articles" />
+      
+      <AdminTopbar 
+        searchPlaceholder="Tìm kiếm bài viết, tác giả..."
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        actions={null}
+      />
 
-      {/* Main Content Area */}
-      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
+      <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-70">
         <div className="mx-auto max-w-7xl space-y-6">
           {/* Header */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -142,99 +215,132 @@ export function AdminArticlesPage() {
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">Quản lý bài viết</h1>
               <p className="text-sm text-slate-500">Tạo và chỉnh sửa cẩm nang chăm sóc xe hoặc thông tin gói dịch vụ</p>
             </div>
-            <Button
-              onClick={handleOpenCreate}
-              className="flex items-center gap-2 bg-primary text-on-primary shadow-md hover:opacity-90 transition-opacity"
-            >
-              <Plus size={18} />
-              Tạo bài viết mới
-            </Button>
+            
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex rounded-lg border border-outline-variant bg-surface p-1">
+                {filterTabs.map((tab, index) => (
+                  <button
+                    className={cn(
+                      'rounded-md px-4 py-2 text-xs font-medium leading-4 text-on-surface-variant hover:bg-surface-container transition-colors',
+                      activeTab === index && 'bg-[#a4c9ff] text-primary font-bold',
+                    )}
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(index)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              
+              <Button
+                onClick={handleOpenCreate}
+                className="flex items-center gap-2 bg-primary text-on-primary shadow-md hover:opacity-90 transition-opacity"
+              >
+                <Plus size={18} />
+                Tạo bài viết mới
+              </Button>
+            </div>
           </div>
 
           {/* List Table */}
           <Card className="overflow-hidden border border-slate-200/80 shadow-sm rounded-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm text-slate-600">
-                <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
-                  <tr>
-                    <th className="px-6 py-4">Bài viết</th>
-                    <th className="px-6 py-4">Chuyên mục</th>
-                    <th className="px-6 py-4">Tác giả</th>
-                    <th className="px-6 py-4">Ngày tạo</th>
-                    <th className="px-6 py-4">Trạng thái</th>
-                    <th className="px-6 py-4 text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {articles.map((article) => (
-                    <tr key={article.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 max-w-sm">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={article.coverImage}
-                            alt=""
-                            className="size-10 rounded-md object-cover bg-slate-100 border border-slate-100"
-                          />
-                          <div className="min-w-0">
-                            <p className="font-semibold text-slate-900 truncate">{article.title}</p>
-                            <p className="text-xs text-slate-450 truncate">{article.summary}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${
-                          article.category === 'VEHICLE'
-                            ? 'bg-indigo-50 text-indigo-700'
-                            : 'bg-emerald-50 text-emerald-700'
-                        }`}>
-                          <Tag size={12} />
-                          {article.category === 'VEHICLE' ? 'Chăm sóc xe' : 'Dịch vụ'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-700">
-                        {article.author}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-slate-500">
-                        {formatDate(article.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => toggleStatus(article)}
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-colors cursor-pointer ${
-                            article.status === 'PUBLISHED'
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                          }`}
-                        >
-                          <span className={`size-1.5 rounded-full ${
-                            article.status === 'PUBLISHED' ? 'bg-green-500' : 'bg-amber-500'
-                          }`} />
-                          {article.status === 'PUBLISHED' ? 'Công khai' : 'Nháp'}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-xs">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleOpenEdit(article)}
-                            className="p-1.5 text-slate-550 hover:text-primary hover:bg-slate-100 rounded-md transition-colors"
-                            title="Sửa bài"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(article.id)}
-                            className="p-1.5 text-slate-550 hover:text-red-650 hover:bg-red-50 rounded-md transition-colors"
-                            title="Xóa bài"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
+            {loading ? (
+              <div className="py-20 text-center text-xs font-semibold text-slate-400 animate-pulse bg-white">
+                Đang đồng bộ cẩm nang chăm sóc xe từ Supabase Cloud...
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-sm text-slate-600">
+                  <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 py-4">Bài viết</th>
+                      <th className="px-6 py-4">Chuyên mục</th>
+                      <th className="px-6 py-4">Tác giả</th>
+                      <th className="px-6 py-4">Ngày tạo</th>
+                      <th className="px-6 py-4">Trạng thái</th>
+                      <th className="px-6 py-4 text-right">Thao tác</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {articles.length > 0 ? (
+                      articles.map((article) => (
+                        <tr key={article.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4 max-w-sm">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={article.coverImage}
+                                alt=""
+                                className="size-10 rounded-md object-cover bg-slate-100 border border-slate-100"
+                              />
+                              <div className="min-w-0">
+                                <p className="font-semibold text-slate-900 truncate">{article.title}</p>
+                                <p className="text-xs text-slate-400 truncate">{article.summary}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${
+                              article.category === 'VEHICLE'
+                                ? 'bg-indigo-50 text-indigo-700'
+                                : 'bg-emerald-50 text-emerald-700'
+                            }`}>
+                              <Tag size={12} />
+                              {article.category === 'VEHICLE' ? 'Chăm sóc xe' : 'Dịch vụ'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-700">
+                            {article.author}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-slate-500">
+                            {formatDate(article.createdAt)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              onClick={() => toggleStatus(article)}
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-colors cursor-pointer ${
+                                article.status === 'PUBLISHED'
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                              }`}
+                            >
+                              <span className={`size-1.5 rounded-full ${
+                                article.status === 'PUBLISHED' ? 'bg-green-500' : 'bg-amber-500'
+                              }`} />
+                              {article.status === 'PUBLISHED' ? 'Công khai' : 'Nháp'}
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-xs">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => handleOpenEdit(article)}
+                                className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-md transition-colors"
+                                title="Sửa bài"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(article.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                title="Xóa bài"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="text-center py-10 text-xs text-slate-400">
+                          ℹ️ Không tìm thấy bài viết nào khớp với từ khóa hoặc bộ lọc trạng thái.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Card>
         </div>
       </main>
@@ -255,7 +361,7 @@ export function AdminArticlesPage() {
                 </h3>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-slate-450 hover:text-slate-650 text-xs font-bold cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                 >
                   Đóng
                 </button>
@@ -264,7 +370,7 @@ export function AdminArticlesPage() {
               <form onSubmit={handleSave} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                       Tiêu đề bài viết *
                     </label>
                     <input
@@ -278,7 +384,7 @@ export function AdminArticlesPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                       Chuyên mục *
                     </label>
                     <select
@@ -292,7 +398,7 @@ export function AdminArticlesPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                       Trạng thái *
                     </label>
                     <select
@@ -306,7 +412,7 @@ export function AdminArticlesPage() {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                       Tác giả *
                     </label>
                     <input
@@ -320,7 +426,7 @@ export function AdminArticlesPage() {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                       Link ảnh bìa (Cover Image URL) *
                     </label>
                     <input
@@ -334,7 +440,7 @@ export function AdminArticlesPage() {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                       Tóm tắt ngắn *
                     </label>
                     <textarea
@@ -347,7 +453,7 @@ export function AdminArticlesPage() {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                       Nội dung chi tiết (HTML được hỗ trợ) *
                     </label>
                     <textarea
@@ -364,7 +470,7 @@ export function AdminArticlesPage() {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="flex-1 py-2.5 border border-slate-200 text-xs font-bold text-slate-650 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="flex-1 py-2.5 border border-slate-200 text-xs font-bold text-slate-600 rounded-xl hover:bg-slate-50 transition-colors"
                   >
                     Hủy bỏ
                   </button>
