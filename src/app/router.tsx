@@ -7,18 +7,61 @@ import {
   useState,
   type AnchorHTMLAttributes,
   type MouseEvent,
-  type ReactNode,
+  type ReactNode
 } from 'react'
-import { MainLayout } from '@/layouts/main-layout'
-import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
-import { AuthPage } from '@/pages/auth-page'
-import { ClientDashboardPage } from '@/pages/client-dashboard-page'
-import { ClientProfilePage } from '@/pages/client-profile-page'
-import { ClientVehiclesPage } from '@/pages/client-vehicles-page'
-import { HomePage } from '@/pages/home-page'
-import { OtpPage } from '@/pages/otp-page'
-import { TestRoutesPage } from '@/pages/test-routes-page'
+import { AdminCustomerPage } from '@/features/admin/pages/admin-customer-page'
+import { AdminRewardsPage } from '@/features/admin/pages/admin-rewards-page'
+import { MainLayout } from '@/shared/components/layout/main-layout'
+import { AdminConfigurationPage } from '@/features/admin/pages/admin-configuration-page'
+import { AdminDashboardPage } from '@/features/admin/pages/admin-dashboard-page'
+import { AdminBookingsPage } from '@/features/admin/pages/admin-bookings-page'
+import { AdminPromotionsPage } from '@/features/admin/pages/admin-promotions-page'
+import { AdminReportsPage } from '@/features/admin/pages/admin-reports-page'
+import { AuthPage } from '@/features/auth/pages/auth-page'
+import { BookingPage } from '@/features/booking/pages/booking-page'
+import { ClientDashboardPage } from '@/features/client/pages/client-dashboard-page'
+import { ClientProfilePage } from '@/features/client/pages/client-profile-page'
+import { ClientVehiclesPage } from '@/features/client/pages/client-vehicles-page'
+import { ClientHistoryPage } from '@/features/client/pages/client-history-page'
+import { ClientArticlesPage } from '@/features/client/pages/client-articles-page'
+import { ClientNotificationsPage } from '@/features/client/pages/client-notifications-page'
+import { AdminArticlesPage } from '@/features/admin/pages/admin-articles-page'
+import { HomePage } from '@/features/marketing/pages/home-page'
+import { LoyaltyPage } from '@/features/client/pages/loyalty-page'
+import ClientPromotionsPage from '@/features/client/pages/client-promotions-page'
+import { OtpPage } from '@/features/auth/pages/otp-page'
+import { TestRoutesPage } from '@/features/test/pages/test-routes-page'
 import { isAppPath, routes, type AppPath } from './routes'
+import { authStore } from '@/features/auth/store/auth-store'
+
+const protectedRoutes: AppPath[] = [
+  routes.dashboard,
+  routes.profile,
+  routes.vehicles,
+  routes.booking,
+  routes.history,
+  routes.loyalty,
+  routes.promotions,
+  routes.notifications,
+  routes.articles,
+  routes.adminArticles,
+  routes.admin,
+  routes.adminBookings,
+  routes.customer,
+  routes.rewards,
+  routes.adminPromotions,
+  routes.adminReports,
+  routes.adminConfiguration,
+]
+
+function Navigate({ to }: { to: AppPath }) {
+  const { navigate } = useRouter()
+  useEffect(() => {
+    navigate(to)
+  }, [navigate, to])
+  return null
+}
+
 
 type RouterContextValue = {
   path: AppPath
@@ -52,14 +95,30 @@ export function AppRouter() {
         window.history.pushState(null, '', to)
         setPath(to)
         window.scrollTo({ top: 0, behavior: 'smooth' })
-      },
+      }
     }),
-    [path],
+    [path]
   )
 
   return (
     <RouterContext.Provider value={value}>
-      {path === routes.dashboard || path === routes.profile || path === routes.vehicles || path === routes.admin ? (
+      {path === routes.dashboard ||
+      path === routes.profile ||
+      path === routes.vehicles ||
+      path === routes.booking ||
+      path === routes.history ||
+      path === routes.loyalty ||
+      path === routes.promotions ||
+      path === routes.notifications ||
+      path === routes.articles ||
+      path === routes.adminArticles ||
+      path === routes.admin ||
+      path === routes.adminBookings ||
+      path === routes.customer ||
+      path === routes.rewards ||
+      path === routes.adminPromotions ||
+      path === routes.adminReports ||
+      path === routes.adminConfiguration ? (
         renderRoute(path)
       ) : (
         <MainLayout>{renderRoute(path)}</MainLayout>
@@ -69,13 +128,45 @@ export function AppRouter() {
 }
 
 function renderRoute(path: AppPath) {
-  // TODO(auth): Khi backend/session sẵn sàng, bật guard này để chặn user chưa đăng nhập:
-  // if (path === routes.dashboard && !authStore.isAuthenticated()) return <Navigate to={routes.login} />
+  if (protectedRoutes.includes(path) && !authStore.isAuthenticated()) {
+    return <Navigate to={routes.login} />
+  }
+
+  if ((path === routes.login || path === routes.register) && authStore.isAuthenticated()) {
+    return <Navigate to={routes.dashboard} />
+  }
+
   switch (path) {
+    case routes.adminConfiguration:
+      return <AdminConfigurationPage />
+    case routes.adminPromotions:
+      return <AdminPromotionsPage />
+    case routes.adminReports:
+      return <AdminReportsPage />
+    case routes.adminBookings:
+      return <AdminBookingsPage />
     case routes.admin:
       return <AdminDashboardPage />
+    case routes.customer:
+      return <AdminCustomerPage />
+    case routes.rewards:
+      return <AdminRewardsPage />
+    case routes.booking:
+      return <BookingPage onBookingSuccess={() => {}} />
+    case routes.loyalty:
+      return <LoyaltyPage />
+    case routes.articles:
+      return <ClientArticlesPage />
+    case routes.adminArticles:
+      return <AdminArticlesPage />
+    case routes.promotions:
+      return <ClientPromotionsPage />
+    case routes.notifications:
+      return <ClientNotificationsPage />
     case routes.dashboard:
       return <ClientDashboardPage />
+    case routes.history:
+      return <ClientHistoryPage />
     case routes.profile:
       return <ClientProfilePage />
     case routes.vehicles:
@@ -112,7 +203,7 @@ type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
 
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   { children, className, onClick, to, ...props },
-  ref,
+  ref
 ) {
   const { navigate } = useRouter()
 
