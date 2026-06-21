@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  Plus,
-  Calendar,
-  MoreVertical,
-  Info,
-  X,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react'
+import { Plus, Calendar, MoreVertical, Info, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -16,53 +8,36 @@ import { AdminTopbar } from '@/features/admin/components/admin-topbar'
 import { cn } from '@/shared/lib/utils'
 
 export interface Booking {
-  bookingId: string
-  customerId: string
-  customerName: string
-  customerPhone: string
-  customerTier: 'MEMBER' | 'SILVER' | 'GOLD' | 'PLATINUM'
-  vehicleId: string
-  licensePlate: string
-  vehicleType: string
-  scheduledAt: string
-  serviceType: string
-  basePrice: number
-  status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
-  priorityScore: number
-  notes: string
-  createdAt: string
+  bookingId: string; customerId: string; customerName: string; customerPhone: string;
+  customerTier: 'MEMBER' | 'SILVER' | 'GOLD' | 'PLATINUM';
+  vehicleId: string; licensePlate: string; vehicleType: string;
+  scheduledAt: string; serviceType: string; basePrice: number;
+  status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+  priorityScore: number; notes: string; createdAt: string;
+  customer?: { customerId: string; fullName: string; phone: string; tier: string };
+  vehicle?: { vehicleId: string; licensePlate: string; vehicleType: string; brand: string };
 }
 
 export function AdminBookingsPage() {
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [loading, setLoading] = useState(false)
-  const [searchText, setSearchText] = useState('')
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('Tất cả trạng thái')
-  const [dateRangeText, setDateRangeText] = useState<string>('') 
-  const [activeBookingId, setActiveBookingId] = useState<string | null>(null)
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('Tất cả trạng thái');
+  const [dateRangeText, setDateRangeText] = useState<string>(''); 
+  const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5;
+  const [isNewBookingOpen, setIsNewBookingOpen] = useState(false);
+  const [newCustName, setNewCustName] = useState('');
+  const [newCustTier, setNewCustTier] = useState<'MEMBER' | 'SILVER' | 'GOLD' | 'PLATINUM'>('MEMBER');
+  const [newCustPhone, setNewCustPhone] = useState('');
+  const [newCarPlate, setNewCarPlate] = useState('');
+  const [newCarModel, setNewCarModel] = useState('');
+  const [newService, setNewService] = useState('BASIC');
+  const [newScheduledAt, setNewScheduledAt] = useState<string>('');
+  const [phoneMessage, setPhoneMessage] = useState<{ text: string; isNew: boolean } | null>(null);
 
-  // Cấu hình phân trang dữ liệu
-  const [currentPage, setCurrentPage] = useState<number>(1)
-  const itemsPerPage = 5
-
-  // Khai báo quản lý trạng thái form tạo mới lịch hẹn (POS) tại quầy
-  const [isNewBookingOpen, setIsNewBookingOpen] = useState(false)
-  const [newCustName, setNewCustName] = useState('')
-  const [newCustTier, setNewCustTier] = useState<'MEMBER' | 'SILVER' | 'GOLD' | 'PLATINUM'>('MEMBER')
-  const [newCustPhone, setNewCustPhone] = useState('')
-  const [newCarPlate, setNewCarPlate] = useState('')
-  const [newCarModel, setNewCarModel] = useState('')
-  const [newService, setNewService] = useState('BASIC')
   
-  // STATE MỚI THÊM: Quản lý ngày giờ hẹn được chọn động từ Form POS
-  const [newScheduledAt, setNewScheduledAt] = useState<string>('')
-
-  // STATE MỚI THÊM: Quản lý thông điệp nhận diện khách hàng qua Số điện thoại
-  const [phoneMessage, setPhoneMessage] = useState<{ text: string; isNew: boolean } | null>(null)
-
-  // =========================================================================
-  //  ĐỒNG BỘ API: TẢI DANH SÁCH ĐẶT LỊCH THỰC TẾ TỪ POSTGRES (SUPABASE)
-  // =========================================================================
   const fetchBookings = async () => {
     setLoading(true)
     try {
@@ -88,10 +63,11 @@ export function AdminBookingsPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setBookings(data)
+        setBookings(Array.isArray(data) ? data : [])
       }
     } catch (error) {
       console.error('Lỗi khi lấy danh sách lịch hẹn:', error)
+      setBookings([])
     } finally {
       setLoading(false)
     }
@@ -101,9 +77,6 @@ export function AdminBookingsPage() {
     fetchBookings()
   }, [selectedStatusFilter, dateRangeText])
 
-  // =========================================================================
-  // 🛠️ ĐỒNG BỘ API: CẬP NHẬT TRẠNG THÁI LUỒNG VÀ TỰ ĐỘNG TÍCH ĐIỂM LOYALTY
-  // =========================================================================
   const onUpdateBookingStatus = async (id: string, newStatus: Booking['status']) => {
     try {
       const token = localStorage.getItem('token')
@@ -113,10 +86,8 @@ export function AdminBookingsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          status: newStatus 
-        }
-      )})
+        body: JSON.stringify({ status: newStatus })
+      })
       
       if (res.ok) {
         setBookings(prev => prev.map(b => b.bookingId === id ? { ...b, status: newStatus } : b))
@@ -124,34 +95,25 @@ export function AdminBookingsPage() {
       } else {
         const errorText = await res.text()
         let errorMessage = 'Không thể chuyển trạng thái'
-        
         try {
           const errData = JSON.parse(errorText)
           errorMessage = errData.message || errorMessage
         } catch (e) {
           errorMessage = errorText || errorMessage
         }
-        
         alert(`Lỗi hệ thống: ${errorMessage}`)
       }
     } catch (error) {
       console.error('Lỗi kết nối API cập nhật trạng thái:', error)
-      alert('Lỗi kết nối: Không thể kết nối tới máy chủ Backend.')
     }
   }
 
-  // =========================================================================
-  //  HÀM XỬ LÝ SỰ KIỆN: TRA CỨU SĐT ĐỘNG VÀ TỰ ĐIỀN HỘ THÔNG TIN (AUTO-FILL)
-  // =========================================================================
   const handlePhoneChange = async (phoneVal: string) => {
     setNewCustPhone(phoneVal)
-    
-    // Nếu xóa đi gõ lại hoặc chưa nhập đủ độ dài tối thiểu của SĐT thì reset text
     if (phoneVal.trim().length < 9) {
       setPhoneMessage(null)
       return
     }
-
     try {
       const token = localStorage.getItem('token')
       const res = await fetch(`http://localhost:8080/api/admin/customers/check?phone=${phoneVal.trim()}`, {
@@ -161,27 +123,21 @@ export function AdminBookingsPage() {
           'Content-Type': 'application/json'
         }
       })
-
       if (res.ok) {
         const data = await res.json()
         if (data.exists) {
-          // 🎉 KHÁCH QUEN: Điền hộ Tên và Hạng thành viên vào Form ngay lặp tức!
           setNewCustName(data.fullName)
           setNewCustTier(data.tier)
           setPhoneMessage({ text: `✨ Hệ thống nhận diện: Khách quen [${data.fullName}] - Hạng [${data.tier}]`, isNew: false })
         } else {
-          // 🆕 KHÁCH MỚI TINH: Để trống thông báo Admin nhập mới tự do
           setPhoneMessage({ text: "🆕 Số điện thoại mới! Hệ thống sẽ khởi tạo tài khoản khi tạo đơn.", isNew: true })
         }
       }
     } catch (error) {
-      console.error("Lỗi tra cứu nhanh thông tin số điện thoại khách hàng:", error)
+      console.error(error)
     }
   }
 
-  // =========================================================================
-  //  ĐỒNG BỘ API: GỬI ĐƠN TẠO MỚI (POS) LÊN SPRING BOOT BACKEND
-  // =========================================================================
   const handleCreateNewBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCustName || !newCarPlate || !newCarModel) return
@@ -192,11 +148,8 @@ export function AdminBookingsPage() {
 
     try {
       const token = localStorage.getItem('token')
-      
-      // Đồng bộ định dạng thời gian động từ state (yyyy-MM-ddTHH:mm:ss) gửi lên Spring Boot
       const formattedDate = `${newScheduledAt}:00`
 
-      // Bốc động lấy ID xe xịn đang có dưới DB để bypass khóa ngoại quan hệ
       let activeVehicleId = "c524991d-e479-44e6-8657-969ef9ef7d00"
       if (bookings.length > 0 && bookings[0].vehicleId) {
         activeVehicleId = bookings[0].vehicleId
@@ -213,15 +166,14 @@ export function AdminBookingsPage() {
           serviceType: newService,      
           scheduledAt: formattedDate,   
           notes: `POS Admin: Khách ${newCustName} | Phone: ${newCustPhone || '0912222222'} | Biển số: ${newCarPlate.toUpperCase()} | Dòng xe: ${newCarModel}`
-        }
-      )})
+        })
+      })
 
       if (res.ok) {
         alert('Tạo lịch hẹn dịch vụ mới thành công!')
         setIsNewBookingOpen(false)
-        setPhoneMessage(null) // Reset thông báo
+        setPhoneMessage(null) 
         fetchBookings() 
-        
         setNewCustName('')
         setNewCustTier('MEMBER')
         setNewCustPhone('')
@@ -234,35 +186,33 @@ export function AdminBookingsPage() {
         alert(`Không thể tạo đơn: ${errData.message || 'Lỗi kiểm tra dữ liệu'}`)
       }
     } catch (error) {
-      console.error('Lỗi khi gửi form tạo booking:', error)
+      console.error(error)
     }
   }
 
-  // =========================================================================
-  //  HÀM HELPER: BÓC TÁCH CHUỖI NOTES THÔNG MINH CHO CẢ TABLE VÀ DRAWER
-  // =========================================================================
   const getDisplayInfo = (booking: Booking) => {
-    const isPos = booking.notes?.startsWith("POS Admin:")
-    let name = booking.customerName
-    let plate = booking.licensePlate
-    let type = booking.vehicleType
-    let phone = booking.customerPhone
+    let name = booking.customerName || booking.customer?.fullName || "Khách Hàng Hệ Thống"
+    let plate = booking.licensePlate || booking.vehicle?.licensePlate || "XE_MÁY"
+    let type = booking.vehicleType || booking.vehicle?.vehicleType || "MOTORBIKE"
+    let phone = booking.customerPhone || booking.customer?.phone || "N/A"
 
-    if (isPos && booking.notes) {
+    const notesStr = booking.notes ? String(booking.notes) : ""
+    const isPos = notesStr.startsWith("POS Admin:")
+
+    if (isPos && notesStr.includes(" | ")) {
       try {
-        const parts = booking.notes.split(" | ")
-        name = parts[0].replace("POS Admin: Khách ", "")
-        phone = parts[1].replace("Phone:", "").trim()
-        plate = parts[2].replace("Biển số: ", "")
-        type = parts[3].replace("Dòng xe: ", "")
+        const parts = notesStr.split(" | ")
+        if (parts[0]) name = parts[0].replace("POS Admin: Khách ", "")
+        if (parts[1]) phone = parts[1].replace("Phone:", "").trim()
+        if (parts[2]) plate = parts[2].replace("Biển số: ", "")
+        if (parts[3]) type = parts[3].replace("Dòng xe: ", "")
       } catch (e) {
-        console.error("Lỗi parse chuỗi notes", e)
+        console.error(e)
       }
     }
     return { name, plate, type, phone, isPos }
   }
 
-  // Logic bộ lọc tìm kiếm sau khi trích xuất chuỗi notes
   const filteredBookings = bookings.filter((b) => {
     const info = getDisplayInfo(b)
     if (searchText.trim() !== '') {
@@ -275,7 +225,8 @@ export function AdminBookingsPage() {
     return true
   })
 
-  const activeBooking = bookings.find((b) => b.bookingId === activeBookingId) || null
+  const safeBookings = Array.isArray(bookings) ? bookings : []
+  const activeBooking = safeBookings.find((b) => b.bookingId === activeBookingId) || null
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
   const currentItems = filteredBookings.slice(indexOfFirstItem, indexOfLastItem)
@@ -288,7 +239,7 @@ export function AdminBookingsPage() {
     setCurrentPage(1)
   }
 
-  const getTierVariant = (tier: Booking['customerTier']) => {
+  const getTierVariant = (tier: Booking['customerTier'] | string | undefined) => {
     switch (tier) {
       case 'GOLD': return 'gold'
       case 'SILVER': return 'silver'
@@ -307,8 +258,9 @@ export function AdminBookingsPage() {
       default: return 'default'
     }
   }
-
+  
   const activeInfo = activeBooking ? getDisplayInfo(activeBooking) : null
+  const currentCustomerTier = activeBooking?.customerTier || activeBooking?.customer?.tier || 'MEMBER'
 
   return (
     <div className="min-h-screen bg-background text-on-surface">
@@ -410,10 +362,12 @@ export function AdminBookingsPage() {
                       <th className='px-5 py-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase text-right'>Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody className='divide-y divide-slate-100'>
-                    {currentItems.length > 0 ? (
-                      currentItems.map((booking) => {
+                    <tbody className='divide-y divide-slate-100'>
+                      {currentItems.map((booking) => {
                         const rowInfo = getDisplayInfo(booking)
+
+                        const displayTier = booking.customer?.tier || booking.customerTier || 'MEMBER'
+                        
                         return (
                           <tr
                             key={booking.bookingId}
@@ -427,7 +381,8 @@ export function AdminBookingsPage() {
                             <td className='px-5 py-4'>
                               <div className='flex items-center gap-1.5'>
                                 <span className='text-xs font-bold text-slate-850'>{rowInfo.name}</span>
-                                <Badge variant={getTierVariant(booking.customerTier)}>{booking.customerTier}</Badge>
+                                {/* 2. Sử dụng biến displayTier đã định nghĩa ở trên */}
+                                <Badge variant={getTierVariant(displayTier) as any}>{displayTier}</Badge>
                               </div>
                             </td>
                             <td className='px-5 py-4'>
@@ -439,7 +394,7 @@ export function AdminBookingsPage() {
                               <div className='text-xs font-bold text-slate-800'>{new Date(booking.scheduledAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                               <div className='text-[10px] text-slate-450 font-semibold mt-0.5'>{new Date(booking.scheduledAt).toLocaleDateString()}</div>
                             </td>
-                            <td className='px-5 py-4'><Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge></td>
+                            <td className='px-5 py-4'><Badge variant={getStatusVariant(booking.status) as any}>{booking.status}</Badge></td>
                             <td className='px-5 py-4 text-center'>
                               <div className='inline-flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200'>
                                 <span className='text-[10px] font-bold text-slate-700'>{booking.priorityScore}</span>
@@ -453,11 +408,8 @@ export function AdminBookingsPage() {
                             </td>
                           </tr>
                         )
-                      })
-                    ) : (
-                      <tr><td colSpan={8} className='py-12 text-center text-gray-400 text-xs font-normal'>Không tìm thấy dữ liệu nào phù hợp với bộ lọc hệ thống.</td></tr>
-                    )}
-                  </tbody>
+                      })}
+                    </tbody>
                 </table>
               )}
             </div>
@@ -498,7 +450,7 @@ export function AdminBookingsPage() {
                         <div>
                           <p className='text-xs font-bold text-slate-850'>{activeInfo.name}</p>
                           <p className='text-[11px] text-slate-455 font-semibold mt-0.5'>{activeInfo.phone}</p>
-                          <div className='mt-1.5'><Badge variant={getTierVariant(activeBooking.customerTier)}>{activeBooking.customerTier}</Badge></div>
+                          <div className='mt-1.5'><Badge variant={getTierVariant(currentCustomerTier) as any}>{currentCustomerTier}</Badge></div>
                         </div>
                       </div>
                     </div>
@@ -508,7 +460,7 @@ export function AdminBookingsPage() {
                       <div className='space-y-2 border-t border-slate-150 pt-2 text-xs'>
                         <div className='flex justify-between items-center py-1.5 border-b border-dashed border-slate-100'><span className='text-slate-450 font-bold uppercase text-[10px]'>Biển kiểm soát</span><span className='font-bold text-slate-800'>{activeInfo.plate}</span></div>
                         <div className='flex justify-between items-center py-1.5 border-b border-dashed border-slate-100'><span className='text-slate-450 font-bold uppercase text-[10px]'>Gói dịch vụ</span><span className='font-bold text-slate-800'>{activeBooking.serviceType}</span></div>
-                        <div className='flex justify-between items-center py-1.5 border-b border-dashed border-slate-100'><span className='text-slate-450 font-bold uppercase text-[10px]'>Giá trị hóa đơn</span><span className='font-bold text-emerald-600'>{activeBooking.basePrice?.toLocaleString()} VND</span></div>
+                        <div className='flex justify-between items-center py-1.5 border-b border-dashed border-slate-100'><span className='text-slate-450 font-bold uppercase text-[10px]'>Giá trị hóa đơn</span><span className='font-bold text-emerald-600'>{activeBooking.basePrice ? activeBooking.basePrice.toLocaleString() : (activeBooking.serviceType === 'PREMIUM' ? '50,000' : (activeBooking.serviceType === 'FULL_DETAIL' ? '80,000' : '30,000'))} VND</span></div>
                       </div>
                     </div>
 

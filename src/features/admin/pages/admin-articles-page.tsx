@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Tag } from 'lucide-react' // Đã dọn dẹp các icon thừa không dùng đến
+import { Plus, Edit2, Trash2, Tag } from 'lucide-react' 
 import { motion, AnimatePresence } from 'motion/react'
 import toast from 'react-hot-toast'
 import { AdminSidebar } from '@/features/admin/components/admin-sidebar'
 import { AdminTopbar } from '@/features/admin/components/admin-topbar'
 import { Button } from '@/shared/components/ui/button'
-import { Card } from '@/shared/components/ui/card' // Đã bỏ CardContent thừa
+import { Card } from '@/shared/components/ui/card' 
 import { cn } from '@/shared/lib/utils'
 import { type Article } from '@/features/articles/data/mock-articles'
 
@@ -101,7 +101,7 @@ export function AdminArticlesPage() {
     setIsModalOpen(true)
   }
 
-  // Hàm lưu dữ liệu
+  // 🌟 HÀM LƯU DỮ LIỆU ĐÃ ĐỒNG BỘ: Sử dụng chuỗi UUID gốc gửi thẳng lên server
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title || !summary || !content || !author || !coverImage) {
@@ -120,10 +120,35 @@ export function AdminArticlesPage() {
       author
     }
 
-    if (editingArticle) {
-      toast.error('Tính năng cập nhật bài viết đang cấu hình phân quyền!')
-    } else {
-      try {
+    try {
+      if (editingArticle) {
+        const targetId = editingArticle.id;
+
+        if (!targetId) {
+          toast.error('Không tìm thấy ID bài viết hợp lệ để chỉnh sửa!')
+          return
+        }
+
+        // 🔄 LUỒNG CẬP NHẬT (PUT API)
+        const res = await fetch(`http://localhost:8080/api/admin/articles/${targetId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
+          body: JSON.stringify(articlePayload)
+        })
+
+        if (res.ok) {
+          toast.success('Cập nhật bài viết thành công! 📝')
+          setIsModalOpen(false)
+          fetchArticles() 
+        } else {
+          const errText = await res.text()
+          toast.error(`Lỗi cập nhật: ${errText}`)
+        }
+      } else {
+        // 🚀 LUỒNG TẠO MỚI (POST API)
         const res = await fetch('http://localhost:8080/api/admin/articles', {
           method: 'POST',
           headers: {
@@ -141,22 +166,45 @@ export function AdminArticlesPage() {
           const errText = await res.text()
           toast.error(`Lỗi từ hệ thống: ${errText}`)
         }
-      } catch (err) {
-        toast.error('Lỗi kết nối máy chủ!')
+      }
+    } catch (err) {
+      toast.error('Lỗi kết nối máy chủ!')
+    }
+  }
+
+  // 🌟 HÀM XÓA BÀI VIẾT THEO CHUỖI UUID
+  const handleDelete = async (id: string) => {
+    if (!id) {
+      toast.error('ID bài viết không hợp lệ!')
+      return
+    }
+
+    if (window.confirm('Bạn có chắc chắn muốn xóa vĩnh viễn bài viết này không?')) {
+      try {
+        const token = localStorage.getItem('accessToken')
+        const res = await fetch(`http://localhost:8080/api/admin/articles/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          }
+        })
+
+        if (res.ok) {
+          setArticles((prev) => prev.filter((art) => art.id !== id))
+          toast.success('Đã xóa bài viết thành công khỏi Database! 🗑️')
+        } else {
+          const errText = await res.text()
+          toast.error(`Không thể xóa bài viết: ${errText}`)
+        }
+      } catch (error) {
+        console.error('Lỗi khi gọi API xóa bài viết:', error)
+        toast.error('Lỗi kết nối máy chủ khi thực hiện xóa!')
       }
     }
   }
 
-  // Handle Delete
-  const handleDelete = (id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này không?')) {
-      const filtered = articles.filter((art) => art.id !== id)
-      setArticles(filtered)
-      toast.success('Đã xóa bài viết tạm thời')
-    }
-  }
-
-  // Luồng lật đổi trạng thái
+  // Luồng lật đổi trạng thái nhanh
   const toggleStatus = async (article: Article) => {
     const token = localStorage.getItem('accessToken')
     const nextStatus = article.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
