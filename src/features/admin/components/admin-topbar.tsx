@@ -1,4 +1,6 @@
 import { Bell, CircleHelp, Plus, Search } from 'lucide-react'
+import { Link } from '@/app/router'
+import { routes } from '@/app/routes'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import type { ReactNode } from 'react'
@@ -42,9 +44,11 @@ export function AdminTopbar({
 
         <div className="ml-auto flex items-center gap-6">
           <div className="flex items-center gap-4 text-on-surface-variant">
-            <Button aria-label="Thông báo" size="icon" type="button" variant="ghost" className="relative">
-              <Bell size={20} />
-              <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-error" />
+            <Button aria-label="Thông báo" asChild size="icon" variant="ghost" className="relative">
+              <Link to={routes.notifications}>
+                <Bell size={20} />
+                <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-error" />
+              </Link>
             </Button>
             <Button aria-label="Trợ giúp" size="icon" type="button" variant="ghost">
               <CircleHelp size={20} />

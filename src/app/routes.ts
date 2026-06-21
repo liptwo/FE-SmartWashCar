@@ -14,6 +14,7 @@ export const routes = {
   history: '/history',
   loyalty: '/loyalty',
   promotions: '/promotions',
+  notifications: '/notifications',
   articles: '/articles',
   adminArticles: '/admin/articles',
   test: '/test',

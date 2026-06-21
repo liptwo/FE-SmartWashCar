@@ -1,5 +1,7 @@
 import { Bell, HelpCircle, Settings, Smartphone } from 'lucide-react'
 import { useSelector } from 'react-redux'
+import { Link } from '@/app/router'
+import { routes } from '@/app/routes'
 import { Button } from '@/shared/components/ui/button'
 import type { RootState } from '@/app/store'
 
@@ -20,8 +22,10 @@ export function ClientTopbar({ title, utility = 'help' }: ClientTopbarProps) {
       <h2 className="text-xl font-medium leading-7 text-on-surface">{displayTitle}</h2>
 
       <div className="flex items-center gap-4">
-        <Button aria-label="Thông báo" size="icon" type="button" variant="ghost">
-          <Bell className="size-5 text-on-surface-variant" />
+        <Button aria-label="Thông báo" asChild size="icon" variant="ghost">
+          <Link to={routes.notifications}>
+            <Bell className="size-5 text-on-surface-variant" />
+          </Link>
         </Button>
         <Button aria-label={utilityLabel} size="icon" type="button" variant="ghost">
           <UtilityIcon className="size-5 text-on-surface-variant" />

@@ -24,6 +24,7 @@ import { ClientProfilePage } from '@/features/client/pages/client-profile-page'
 import { ClientVehiclesPage } from '@/features/client/pages/client-vehicles-page'
 import { ClientHistoryPage } from '@/features/client/pages/client-history-page'
 import { ClientArticlesPage } from '@/features/client/pages/client-articles-page'
+import { ClientNotificationsPage } from '@/features/client/pages/client-notifications-page'
 import { AdminArticlesPage } from '@/features/admin/pages/admin-articles-page'
 import { HomePage } from '@/features/marketing/pages/home-page'
 import { LoyaltyPage } from '@/features/client/pages/loyalty-page'
@@ -41,6 +42,7 @@ const protectedRoutes: AppPath[] = [
   routes.history,
   routes.loyalty,
   routes.promotions,
+  routes.notifications,
   routes.articles,
   routes.adminArticles,
   routes.admin,
@@ -107,6 +109,7 @@ export function AppRouter() {
       path === routes.history ||
       path === routes.loyalty ||
       path === routes.promotions ||
+      path === routes.notifications ||
       path === routes.articles ||
       path === routes.adminArticles ||
       path === routes.admin ||
@@ -158,6 +161,8 @@ function renderRoute(path: AppPath) {
       return <AdminArticlesPage />
     case routes.promotions:
       return <ClientPromotionsPage />
+    case routes.notifications:
+      return <ClientNotificationsPage />
     case routes.dashboard:
       return <ClientDashboardPage />
     case routes.history:
