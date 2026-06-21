@@ -17,8 +17,10 @@ export function AppHeader() {
         <Button aria-label="Trợ giúp" size="icon" type="button" variant="ghost">
           <HelpCircle className="size-5 text-on-surface-variant" />
         </Button>
-        <Button aria-label="Thông báo" size="icon" type="button" variant="ghost">
-          <Bell className="size-5 text-on-surface-variant" />
+        <Button aria-label="Thông báo" asChild size="icon" variant="ghost">
+          <Link to={routes.notifications}>
+            <Bell className="size-5 text-on-surface-variant" />
+          </Link>
         </Button>
         <Button
           aria-label="Hồ sơ"
