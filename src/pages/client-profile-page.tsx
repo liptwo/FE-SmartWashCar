@@ -1,12 +1,14 @@
-import { useState, type ReactNode } from 'react'
-import { Camera, Edit, LogOut, Phone } from 'lucide-react'
+import { useState, useEffect, type ReactNode, type FormEvent } from 'react'
+import { Camera, Edit, LogOut, Phone, Eye, EyeOff, CheckCircle, AlertCircle, X } from 'lucide-react'
 import { ClientSidebar } from '@/components/dashboard/client-sidebar'
 import { ClientTopbar } from '@/components/dashboard/client-topbar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 const customer = {
+  id: '123',
   name: 'Alex Nguyen',
   initials: 'AN',
   phone: '090 123 4567',
@@ -77,6 +79,206 @@ function SectionCard({ children, title }: { children: ReactNode; title: string }
   )
 }
 
+function ChangePasswordSection({ customerId }: { customerId: string }) {
+  const [oldPassword, setOldPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  const [showOld, setShowOld] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [toast])
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setError('Vui lòng điền đầy đủ thông tin.')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Mật khẩu mới và xác nhận mật khẩu không trùng khớp.')
+      return
+    }
+
+    if (newPassword.length < 6) {
+      setError('Mật khẩu mới phải có ít nhất 6 ký tự.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/customers/${customerId}/password`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          oldPassword,
+          newPassword,
+        }),
+      })
+
+      if (!response.ok) {
+        let errMsg = 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ.'
+        try {
+          const errorData = await response.json()
+          if (errorData.message) {
+            errMsg = errorData.message
+          }
+        } catch {
+          // ignore
+        }
+        throw new Error(errMsg)
+      }
+
+      setToast({ message: 'Đổi mật khẩu thành công!', type: 'success' })
+      setOldPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err: any) {
+      setToast({ message: err.message || 'Đổi mật khẩu thất bại.', type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <SectionCard title="Đổi mật khẩu">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+          {error && (
+            <div className="flex items-center gap-2 rounded-lg bg-danger/10 p-3 text-sm text-danger">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div>
+            <label className="mb-2 block text-sm font-medium leading-4 text-outline">
+              Mật khẩu cũ
+            </label>
+            <div className="relative">
+              <Input
+                type={showOld ? 'text' : 'password'}
+                placeholder="Nhập mật khẩu cũ"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                required
+                className="pr-10"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface cursor-pointer"
+                onClick={() => setShowOld(!showOld)}
+              >
+                {showOld ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium leading-4 text-outline">
+              Mật khẩu mới
+            </label>
+            <div className="relative">
+              <Input
+                type={showNew ? 'text' : 'password'}
+                placeholder="Nhập mật khẩu mới"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                className="pr-10"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface cursor-pointer"
+                onClick={() => setShowNew(!showNew)}
+              >
+                {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium leading-4 text-outline">
+              Xác nhận mật khẩu
+            </label>
+            <div className="relative">
+              <Input
+                type={showConfirm ? 'text' : 'password'}
+                placeholder="Xác nhận mật khẩu"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="pr-10"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface cursor-pointer"
+                onClick={() => setShowConfirm(!showConfirm)}
+              >
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full h-12 mt-2 cursor-pointer"
+            disabled={loading}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5 text-white animate-infinite" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Đang cập nhật...
+              </span>
+            ) : (
+              'Cập nhật mật khẩu'
+            )}
+          </Button>
+        </form>
+      </SectionCard>
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-outline-variant bg-surface px-4 py-3 shadow-lg transition-all duration-300 ease-in-out">
+          {toast.type === 'success' ? (
+            <CheckCircle className="text-success size-5 shrink-0" />
+          ) : (
+            <AlertCircle className="text-danger size-5 shrink-0" />
+          )}
+          <span className="text-sm font-medium text-on-surface">{toast.message}</span>
+          <button
+            type="button"
+            className="ml-2 text-outline hover:text-on-surface cursor-pointer"
+            onClick={() => setToast(null)}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+    </>
+  )
+}
+
 export function ClientProfilePage() {
   return (
     <div className="min-h-screen bg-background text-on-surface">
@@ -125,18 +327,22 @@ export function ClientProfilePage() {
           </Card>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <SectionCard title="Thông tin cá nhân">
-              <div className="space-y-5 p-6">
-                {personalFields.map((field) => (
-                  <label className="block" key={field.label}>
-                    <span className="mb-2 block text-sm font-medium leading-4 text-outline">{field.label}</span>
-                    <span className="block rounded-lg border border-outline-variant bg-background px-4 py-3 text-base leading-6 text-on-surface">
-                      {field.value}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </SectionCard>
+            <div className="space-y-6">
+              <SectionCard title="Thông tin cá nhân">
+                <div className="space-y-5 p-6">
+                  {personalFields.map((field) => (
+                    <label className="block" key={field.label}>
+                      <span className="mb-2 block text-sm font-medium leading-4 text-outline">{field.label}</span>
+                      <span className="block rounded-lg border border-outline-variant bg-background px-4 py-3 text-base leading-6 text-on-surface">
+                        {field.value}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </SectionCard>
+
+              <ChangePasswordSection customerId={customer.id} />
+            </div>
 
             <SectionCard title="Cài đặt thông báo">
               <div className="space-y-6 p-6">
