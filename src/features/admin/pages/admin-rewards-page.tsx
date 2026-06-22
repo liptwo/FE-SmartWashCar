@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { AdminSidebar } from '@/features/admin/components/admin-sidebar'
 import { AdminTopbar } from '@/features/admin/components/admin-topbar'
 import { Search, Loader2 } from 'lucide-react'
