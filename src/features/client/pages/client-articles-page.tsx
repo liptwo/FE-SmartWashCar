@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { BookOpen, Calendar, User, Search, Tag, X } from 'lucide-react'
+import { BookOpen, Calendar, User, Search, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { ClientSidebar } from '@/features/client/components/client-sidebar'
 import { ClientTopbar } from '@/features/client/components/client-topbar'
