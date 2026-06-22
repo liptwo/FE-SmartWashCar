@@ -6,6 +6,8 @@ import { Button } from '@/shared/components/ui/button'
 import { AdminSidebar } from '@/features/admin/components/admin-sidebar'
 import { AdminTopbar } from '@/features/admin/components/admin-topbar'
 import { cn } from '@/shared/lib/utils'
+import { adminService } from '@/features/admin/services/admin-service'
+import { bookingService } from '@/features/booking/services/booking-service'
 
 export interface Booking {
   bookingId: string; customerId: string; customerName: string; customerPhone: string;
@@ -41,30 +43,10 @@ export function AdminBookingsPage() {
   const fetchBookings = async () => {
     setLoading(true)
     try {
-      let url = 'http://localhost:8080/api/admin/bookings' 
-      const params = new URLSearchParams()
-      
-      if (selectedStatusFilter && selectedStatusFilter !== 'Tất cả trạng thái') {
-        params.append('status', selectedStatusFilter.toUpperCase().replace(' ', '_'))
-      }
-      if (dateRangeText && dateRangeText.trim() !== '') {
-        params.append('date', dateRangeText)
-      }
-      if (params.toString()) url += `?${params.toString()}`
-
-      const token = localStorage.getItem('token')
-
-      const res = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setBookings(Array.isArray(data) ? data : [])
-      }
+      const apiStatus = selectedStatusFilter === 'Tất cả trạng thái' ? undefined : selectedStatusFilter
+      const dateParam = dateRangeText && dateRangeText.trim() !== '' ? dateRangeText : undefined
+      const data = await adminService.getBookings({ status: apiStatus, date: dateParam })
+      setBookings(data as any[])
     } catch (error) {
       console.error('Lỗi khi lấy danh sách lịch hẹn:', error)
       setBookings([])
@@ -79,32 +61,12 @@ export function AdminBookingsPage() {
 
   const onUpdateBookingStatus = async (id: string, newStatus: Booking['status']) => {
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8080/api/admin/bookings/${id}/status`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      })
-      
-      if (res.ok) {
-        setBookings(prev => prev.map(b => b.bookingId === id ? { ...b, status: newStatus } : b))
-        alert(`Đã cập nhật trạng thái đơn sang ${newStatus} thành công!`)
-      } else {
-        const errorText = await res.text()
-        let errorMessage = 'Không thể chuyển trạng thái'
-        try {
-          const errData = JSON.parse(errorText)
-          errorMessage = errData.message || errorMessage
-        } catch (e) {
-          errorMessage = errorText || errorMessage
-        }
-        alert(`Lỗi hệ thống: ${errorMessage}`)
-      }
-    } catch (error) {
-      console.error('Lỗi kết nối API cập nhật trạng thái:', error)
+      await adminService.updateBookingStatus(id, newStatus)
+      setBookings(prev => prev.map(b => b.bookingId === id ? { ...b, status: newStatus } : b))
+      alert(`Đã cập nhật trạng thái đơn sang ${newStatus} thành công!`)
+    } catch (error: any) {
+      console.error('Lỗi cập nhật trạng thái:', error)
+      alert(`Lỗi hệ thống: ${error.response?.data?.message || error.message || 'Không thể chuyển trạng thái'}`)
     }
   }
 
@@ -115,23 +77,13 @@ export function AdminBookingsPage() {
       return
     }
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:8080/api/admin/customers/check?phone=${phoneVal.trim()}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.exists) {
-          setNewCustName(data.fullName)
-          setNewCustTier(data.tier)
-          setPhoneMessage({ text: `✨ Hệ thống nhận diện: Khách quen [${data.fullName}] - Hạng [${data.tier}]`, isNew: false })
-        } else {
-          setPhoneMessage({ text: "🆕 Số điện thoại mới! Hệ thống sẽ khởi tạo tài khoản khi tạo đơn.", isNew: true })
-        }
+      const data = await adminService.checkCustomerByPhone(phoneVal.trim())
+      if (data && data.exists) {
+        setNewCustName(data.fullName || '')
+        setNewCustTier((data.tier as any) || 'MEMBER')
+        setPhoneMessage({ text: `✨ Hệ thống nhận diện: Khách quen [${data.fullName}] - Hạng [${data.tier}]`, isNew: false })
+      } else {
+        setPhoneMessage({ text: "🆕 Số điện thoại mới! Hệ thống sẽ khởi tạo tài khoản khi tạo đơn.", isNew: true })
       }
     } catch (error) {
       console.error(error)
@@ -147,7 +99,6 @@ export function AdminBookingsPage() {
     }
 
     try {
-      const token = localStorage.getItem('token')
       const formattedDate = `${newScheduledAt}:00`
 
       let activeVehicleId = "c524991d-e479-44e6-8657-969ef9ef7d00"
@@ -155,38 +106,27 @@ export function AdminBookingsPage() {
         activeVehicleId = bookings[0].vehicleId
       }
 
-      const res = await fetch('http://localhost:8080/api/bookings', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          vehicleId: activeVehicleId,   
-          serviceType: newService,      
-          scheduledAt: formattedDate,   
-          notes: `POS Admin: Khách ${newCustName} | Phone: ${newCustPhone || '0912222222'} | Biển số: ${newCarPlate.toUpperCase()} | Dòng xe: ${newCarModel}`
-        })
+      await bookingService.createBooking({
+        vehicleId: activeVehicleId,   
+        serviceType: newService,      
+        scheduledAt: formattedDate,   
+        notes: `POS Admin: Khách ${newCustName} | Phone: ${newCustPhone || '0912222222'} | Biển số: ${newCarPlate.toUpperCase()} | Dòng xe: ${newCarModel}`
       })
 
-      if (res.ok) {
-        alert('Tạo lịch hẹn dịch vụ mới thành công!')
-        setIsNewBookingOpen(false)
-        setPhoneMessage(null) 
-        fetchBookings() 
-        setNewCustName('')
-        setNewCustTier('MEMBER')
-        setNewCustPhone('')
-        setNewCarPlate('')
-        setNewCarModel('')
-        setNewService('BASIC')
-        setNewScheduledAt('')
-      } else {
-        const errData = await res.json()
-        alert(`Không thể tạo đơn: ${errData.message || 'Lỗi kiểm tra dữ liệu'}`)
-      }
-    } catch (error) {
+      alert('Tạo lịch hẹn dịch vụ mới thành công!')
+      setIsNewBookingOpen(false)
+      setPhoneMessage(null) 
+      fetchBookings() 
+      setNewCustName('')
+      setNewCustTier('MEMBER')
+      setNewCustPhone('')
+      setNewCarPlate('')
+      setNewCarModel('')
+      setNewService('BASIC')
+      setNewScheduledAt('')
+    } catch (error: any) {
       console.error(error)
+      alert(`Không thể tạo đơn: ${error.response?.data?.message || error.message || 'Lỗi kiểm tra dữ liệu'}`)
     }
   }
 

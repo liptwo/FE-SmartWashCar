@@ -36,6 +36,12 @@ export interface AdminBooking {
   technician?: string
   carImgUrl?: string
   totalAmount?: number
+  scheduledAt: string
+  serviceType: string
+  vehicleId?: string
+  priorityScore?: number
+  customer?: any
+  vehicle?: any
 }
 
 export interface AdminVehicle {
@@ -250,6 +256,12 @@ function normalizeBooking(booking: any): AdminBooking {
     technician: booking.technician ?? 'Kỹ thuật viên 1',
     carImgUrl: booking.carImgUrl ?? 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600',
     totalAmount,
+    scheduledAt: scheduledTime || new Date().toISOString(),
+    serviceType: booking.serviceType || 'BASIC',
+    vehicleId: booking.vehicleId || booking.vehicle?.vehicleId,
+    priorityScore: booking.priorityScore ?? booking.priority ?? 50,
+    customer: booking.customer,
+    vehicle: booking.vehicle,
   }
 }
 
@@ -318,5 +330,85 @@ export const adminService = {
   async updateBookingStatus(bookingId: string, status: string): Promise<AdminBooking> {
     const { data } = await authorizeAxios.patch(`/admin/bookings/${bookingId}/status`, { status })
     return normalizeBooking(data)
+  },
+  
+  async checkCustomerByPhone(phone: string): Promise<{ exists: boolean; id?: string; customerId?: string; fullName?: string; tier?: string }> {
+    const { data } = await authorizeAxios.get('/admin/customers/check', {
+      params: { phone }
+    })
+    return data
+  },
+
+  async getSystemConfig(): Promise<{ pointRate: string; tierRules: any[] }> {
+    try {
+      const { data } = await authorizeAxios.get('/admin/config')
+      return data
+    } catch (e) {
+      const savedRate = localStorage.getItem('admin_point_rate') || '10.000'
+      const savedRules = localStorage.getItem('admin_tier_rules')
+      const tierRules = savedRules ? JSON.parse(savedRules) : []
+      return { pointRate: savedRate, tierRules }
+    }
+  },
+
+  async saveSystemConfig(config: { pointRate: string; tierRules: any[] }): Promise<any> {
+    try {
+      const { data } = await authorizeAxios.put('/admin/config', config)
+      return data
+    } catch (e) {
+      localStorage.setItem('admin_point_rate', config.pointRate)
+      localStorage.setItem('admin_tier_rules', JSON.stringify(config.tierRules))
+      return { status: 'SUCCESS', message: 'Saved to local storage fallback' }
+    }
+  },
+
+  async getRewards(): Promise<any[]> {
+    try {
+      const { data } = await authorizeAxios.get('/admin/config/rewards')
+      return data
+    } catch (e) {
+      const savedRewards = localStorage.getItem('admin_reward_items')
+      return savedRewards ? JSON.parse(savedRewards) : []
+    }
+  },
+
+  async addReward(reward: any): Promise<any> {
+    try {
+      const { data } = await authorizeAxios.post('/admin/config/rewards', reward)
+      return data
+    } catch (e) {
+      const savedRewards = localStorage.getItem('admin_reward_items')
+      const rewards = savedRewards ? JSON.parse(savedRewards) : []
+      const newReward = { ...reward, id: Date.now() }
+      localStorage.setItem('admin_reward_items', JSON.stringify([...rewards, newReward]))
+      return newReward;
+    }
+  },
+
+  async deleteReward(id: string | number): Promise<any> {
+    try {
+      const { data } = await authorizeAxios.delete(`/admin/config/rewards/${id}`)
+      return data
+    } catch (e) {
+      const savedRewards = localStorage.getItem('admin_reward_items')
+      if (savedRewards) {
+        const rewards = JSON.parse(savedRewards)
+        const filtered = rewards.filter((r: any, idx: number) => r.id !== id && idx !== id)
+        localStorage.setItem('admin_reward_items', JSON.stringify(filtered))
+      }
+      return { status: 'SUCCESS' }
+    }
+  },
+
+  async getRevenueReport(granularity: string, startDate?: string, endDate?: string): Promise<any> {
+    const params = { granularity, startDate, endDate }
+    const { data } = await authorizeAxios.get('/admin/reports/revenue', { params })
+    return data
+  },
+
+  async getCustomerReport(startDate?: string, endDate?: string): Promise<any> {
+    const params = { startDate, endDate }
+    const { data } = await authorizeAxios.get('/admin/reports/customers', { params })
+    return data
   },
 }

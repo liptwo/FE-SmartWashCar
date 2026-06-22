@@ -46,7 +46,7 @@ export function AdminArticlesPage() {
         url.searchParams.append('search', searchQuery.trim())
       }
 
-      const token = localStorage.getItem('accessToken')
+      const token = localStorage.getItem('jwt_token')
       const res = await fetch(url.toString(), {
         method: 'GET',
         headers: {
@@ -109,7 +109,7 @@ export function AdminArticlesPage() {
       return
     }
 
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem('jwt_token')
     const articlePayload = {
       title,
       summary,
@@ -181,7 +181,7 @@ export function AdminArticlesPage() {
 
     if (window.confirm('Bạn có chắc chắn muốn xóa vĩnh viễn bài viết này không?')) {
       try {
-        const token = localStorage.getItem('accessToken')
+        const token = localStorage.getItem('jwt_token')
         const res = await fetch(`http://localhost:8080/api/admin/articles/${id}`, {
           method: 'DELETE',
           headers: {
@@ -206,7 +206,7 @@ export function AdminArticlesPage() {
 
   // Luồng lật đổi trạng thái nhanh
   const toggleStatus = async (article: Article) => {
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem('jwt_token')
     const nextStatus = article.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
 
     setArticles((prev) =>

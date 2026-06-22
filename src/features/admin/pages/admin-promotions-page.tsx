@@ -45,7 +45,7 @@ export function AdminPromotionsPage() {
         url.searchParams.append('search', searchQuery.trim())
       }
 
-      const token = localStorage.getItem('accessToken')
+      const token = localStorage.getItem('jwt_token')
 
       const res = await fetch(url.toString(), {
         method: 'GET',
@@ -118,7 +118,7 @@ export function AdminPromotionsPage() {
 
   // XỬ LÝ LẬT TRẠNG THÁI TOGGLE SWITCH (OPTIMISTIC UPDATE)
   const handleToggleStatus = async (id: string) => {
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem('jwt_token')
     console.log("=== TOKEN ĐANG GỬI ĐI LÀ ===", token)
 
     setPromotions((prevPromotions) =>

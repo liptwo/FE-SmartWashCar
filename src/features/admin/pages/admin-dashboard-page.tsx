@@ -22,7 +22,7 @@ export function AdminDashboardPage() {
   const fetchDashboardStats = async (isManualClick = false) => {
     if (isManualClick) setIsRefreshing(true)
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('jwt_token')
       const customHeaders: Record<string, string> = {
         'Content-Type': 'application/json'
       }

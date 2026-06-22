@@ -21,7 +21,7 @@ export function ConfirmSendModal({ onClose, promotion }: ConfirmSendModalProps) 
     setSending(true)
     try {
       // Lấy chính xác accessToken đồng bộ với cơ chế xác thực hệ thống của Khang
-      const token = localStorage.getItem('accessToken')
+      const token = localStorage.getItem('jwt_token')
 
       const res = await fetch(`http://localhost:8080/api/admin/promotions/${promotion.id}/send`, {
         method: 'POST',
@@ -135,7 +135,7 @@ export function CreatePromotionDrawer({ onClose, open, onSuccess }: CreatePromot
 
     setSubmitting(true)
     try {
-      const token = localStorage.getItem('accessToken')
+      const token = localStorage.getItem('jwt_token')
 
       // Đóng gói request chuẩn định dạng Java nhận diện
       const requestBody = {
