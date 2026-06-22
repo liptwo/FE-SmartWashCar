@@ -1,6 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 
+import { authStore } from './auth-store'
+
 const TOKEN_KEY = 'jwt_token'
 const REFRESH_TOKEN_KEY = 'refresh_token'
 const USER_KEY = 'auth_user'
@@ -32,13 +34,7 @@ const getInitialRefreshToken = (): string | null => {
 }
 
 const getInitialUser = (): User | null => {
-  const userStr = localStorage.getItem(USER_KEY)
-  if (!userStr) return null
-  try {
-    return JSON.parse(userStr)
-  } catch {
-    return null
-  }
+  return authStore.getUser()
 }
 
 const initialState: AuthState = {
@@ -62,7 +58,6 @@ const authSlice = createSlice({
       state.isLoading = false
       state.token = action.payload.token
       state.refreshToken = action.payload.refreshToken || null
-      state.user = action.payload.user || null
       state.isAuthenticated = true
       state.error = null
 
@@ -70,8 +65,11 @@ const authSlice = createSlice({
       if (action.payload.refreshToken) {
         localStorage.setItem(REFRESH_TOKEN_KEY, action.payload.refreshToken)
       }
-      if (action.payload.user) {
-        localStorage.setItem(USER_KEY, JSON.stringify(action.payload.user))
+      
+      const user = action.payload.user || null
+      state.user = user
+      if (user) {
+        localStorage.setItem(USER_KEY, JSON.stringify(user))
       }
     },
     registerSuccess(state) {

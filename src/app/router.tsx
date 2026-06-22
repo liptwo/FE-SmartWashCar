@@ -54,6 +54,17 @@ const protectedRoutes: AppPath[] = [
   routes.adminConfiguration,
 ]
 
+const adminRoutes: AppPath[] = [
+  routes.admin,
+  routes.adminBookings,
+  routes.customer,
+  routes.rewards,
+  routes.adminConfiguration,
+  routes.adminPromotions,
+  routes.adminReports,
+  routes.adminArticles,
+]
+
 function Navigate({ to }: { to: AppPath }) {
   const { navigate } = useRouter()
   useEffect(() => {
@@ -100,9 +111,17 @@ export function AppRouter() {
     [path]
   )
 
+  const user = authStore.getUser()
+  const isAdmin = user?.role === 'ADMIN'
+
+  // Block client users from accessing admin pages
+  const isAuthorized = !adminRoutes.includes(path) || isAdmin
+
   return (
     <RouterContext.Provider value={value}>
-      {path === routes.dashboard ||
+      {!isAuthorized ? (
+        <Navigate to={routes.dashboard} />
+      ) : path === routes.dashboard ||
       path === routes.profile ||
       path === routes.vehicles ||
       path === routes.booking ||
@@ -128,12 +147,20 @@ export function AppRouter() {
 }
 
 function renderRoute(path: AppPath) {
+  const user = authStore.getUser()
+  const isAdmin = user?.role === 'ADMIN'
+
   if (protectedRoutes.includes(path) && !authStore.isAuthenticated()) {
     return <Navigate to={routes.login} />
   }
 
-  if ((path === routes.login || path === routes.register) && authStore.isAuthenticated()) {
+  // Redirect clients to dashboard, admins to admin dashboard
+  if (adminRoutes.includes(path) && !isAdmin) {
     return <Navigate to={routes.dashboard} />
+  }
+
+  if ((path === routes.login || path === routes.register) && authStore.isAuthenticated()) {
+    return <Navigate to={isAdmin ? routes.admin : routes.dashboard} />
   }
 
   switch (path) {
