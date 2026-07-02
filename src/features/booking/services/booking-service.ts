@@ -3,7 +3,8 @@ import { authorizeAxios } from '@/shared/lib/api-client'
 export interface CreateBookingRequest {
   vehicleId: string
   scheduledAt: string // ISO string or LocalDateTime format (yyyy-MM-ddTHH:mm:ss)
-  serviceType: string
+  serviceType?: string
+  serviceIds?: string[]
   notes?: string
 }
 
@@ -27,6 +28,15 @@ export interface BookingResponse {
 export interface AvailabilitySlotResponse {
   time: string
   available: boolean
+}
+
+export interface WashService {
+  serviceId: string
+  name: string
+  description: string
+  basePrice: number
+  estimatedDuration: number
+  isActive: boolean
 }
 
 export const bookingService = {
@@ -60,6 +70,11 @@ export const bookingService = {
     const { data } = await authorizeAxios.get<AvailabilitySlotResponse[]>('/bookings/availability', {
       params: { date },
     })
+    return data
+  },
+
+  async getServices(): Promise<WashService[]> {
+    const { data } = await authorizeAxios.get<WashService[]>('/services')
     return data
   },
 }
