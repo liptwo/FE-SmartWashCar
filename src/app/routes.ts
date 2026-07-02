@@ -21,6 +21,7 @@ export const routes = {
   login: '/login',
   register: '/register',
   otp: '/otp',
+  contact: '/lien-he',
 } as const
 
 export type AppPath = (typeof routes)[keyof typeof routes]

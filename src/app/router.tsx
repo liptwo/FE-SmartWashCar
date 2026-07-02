@@ -27,6 +27,7 @@ import { ClientArticlesPage } from '@/features/client/pages/client-articles-page
 import { ClientNotificationsPage } from '@/features/client/pages/client-notifications-page'
 import { AdminArticlesPage } from '@/features/admin/pages/admin-articles-page'
 import { HomePage } from '@/features/marketing/pages/home-page'
+import { ContactPage } from '@/features/marketing/pages/contact-page'
 import { LoyaltyPage } from '@/features/client/pages/loyalty-page'
 import ClientPromotionsPage from '@/features/client/pages/client-promotions-page'
 import { OtpPage } from '@/features/auth/pages/otp-page'
@@ -206,6 +207,8 @@ function renderRoute(path: AppPath) {
       return <AuthPage mode='register' />
     case routes.otp:
       return <OtpPage />
+    case routes.contact:
+      return <ContactPage />
     case routes.home:
     default:
       return <HomePage />
