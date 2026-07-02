@@ -176,7 +176,7 @@ export function LoyaltyPage() {
               </div>
               <div>
                 <p className='text-3xl font-bold tracking-tight text-slate-900'>
-                  {isLoading ? '...' : `${new Intl.NumberFormat('vi-VN').format(balance)} pts`}
+                  {isLoading ? '...' : `${new Intl.NumberFormat('vi-VN').format(balance)} điểm`}
                 </p>
                 <p className='text-xs font-medium text-slate-450 uppercase tracking-widest mt-0.5'>
                   Tài khoản hạng {tier}
@@ -397,13 +397,13 @@ export function LoyaltyPage() {
                         <span
                           className={cn(
                             'text-xs font-bold tracking-tight',
-                            isEarn ? 'text-emerald-600' : 'text-indigo-600'
+                            !isEarn ? 'text-emerald-600' : 'text-indigo-600'
                           )}
                         >
-                          {isEarn ? `+${item.points}` : `-${Math.abs(item.points)}`} pts
+                          {!isEarn ? `+${item.points}` : `-${Math.abs(item.points)}`} pts
                         </span>
                         <p className='text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-0.5'>
-                          {isEarn ? 'Tích lũy' : 'Đã dùng'}
+                          {!isEarn ? 'Tích lũy' : 'Đã dùng'}
                         </p>
                       </div>
                     </motion.div>

@@ -129,7 +129,7 @@ export function AdminRewardsPage() {
                   <p className="text-xs text-slate-550 mt-0.5">Hạng thẻ: <span className="text-indigo-650 font-bold">{customer.tier}</span></p>
                 </div>
                 <div className="bg-indigo-900 text-white px-4 py-2 rounded-full text-sm font-bold">
-                  ⭐ Điểm tích lũy: {currentPoints.toLocaleString()} pts
+                  ⭐ Điểm tích lũy: {currentPoints.toLocaleString()} điểm
                 </div>
               </div>
             )}
@@ -157,7 +157,7 @@ export function AdminRewardsPage() {
                         {reward.title}
                         {reward.badge && <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-md font-bold">{reward.badge}</span>}
                       </h3>
-                      <p className="text-sm text-indigo-600 font-semibold">{reward.cost} pts</p>
+                      <p className="text-sm text-indigo-600 font-semibold">{reward.cost} điểm</p>
                     </div>
                   </div>
                   {!isAffordable && <span className="text-slate-400">🔒</span>}
@@ -172,7 +172,7 @@ export function AdminRewardsPage() {
               <div className="bg-white p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-xl">
                 <h3 className="text-lg font-bold text-slate-900">Xác nhận đổi quà</h3>
                 <p className="text-sm text-slate-650">
-                  Xác nhận dùng <strong className="text-indigo-600">{selectedReward.cost} pts</strong> để đổi gói <strong className="text-slate-900">{selectedReward.title}</strong> cho khách hàng <strong className="text-slate-900">{customer.fullName}</strong>?
+                  Xác nhận dùng <strong className="text-indigo-600">{selectedReward.cost} điểm</strong> để đổi gói <strong className="text-slate-900">{selectedReward.title}</strong> cho khách hàng <strong className="text-slate-900">{customer.fullName}</strong>?
                 </p>
                 <div className="flex gap-2 justify-end pt-2">
                   <button onClick={() => setSelectedReward(null)} disabled={submitting} className="px-4 py-2 border rounded-xl text-sm font-medium hover:bg-slate-50">Hủy</button>

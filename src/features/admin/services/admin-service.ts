@@ -25,6 +25,7 @@ export interface AdminBooking {
   customerPhone: string
   customerTier: 'MEMBER' | 'SILVER' | 'GOLD' | 'PLATINUM'
   carPlate: string
+  licensePlate?: string
   carModel: string
   serviceName: string
   timeStr: string
@@ -42,6 +43,7 @@ export interface AdminBooking {
   priorityScore?: number
   customer?: any
   vehicle?: any
+  vehicleType?: string
 }
 
 export interface AdminVehicle {
@@ -206,6 +208,8 @@ function normalizeBooking(booking: any): AdminBooking {
   const vehicleName =
     booking.vehicle_name ??
     booking.vehicleName ??
+    booking.licensePlate ??
+    booking.license_plate ??
     booking.vehicle?.license_plate ??
     booking.vehicle?.licensePlate ??
     booking.vehicle?.plate_number ??
@@ -245,6 +249,7 @@ function normalizeBooking(booking: any): AdminBooking {
       '--',
     customerTier,
     carPlate: vehicleName,
+    licensePlate: vehicleName,
     carModel: booking.vehicle?.brand || booking.vehicle?.vehicleType || 'Sedan',
     serviceName,
     timeStr,
@@ -262,6 +267,7 @@ function normalizeBooking(booking: any): AdminBooking {
     priorityScore: booking.priorityScore ?? booking.priority ?? 50,
     customer: booking.customer,
     vehicle: booking.vehicle,
+    vehicleType: booking.vehicleType || booking.vehicle?.vehicleType || 'CAR',
   }
 }
 
@@ -409,6 +415,26 @@ export const adminService = {
   async getCustomerReport(startDate?: string, endDate?: string): Promise<any> {
     const params = { startDate, endDate }
     const { data } = await authorizeAxios.get('/admin/reports/customers', { params })
+    return data
+  },
+
+  async getAdminServices(): Promise<any[]> {
+    const { data } = await authorizeAxios.get('/admin/services')
+    return data
+  },
+
+  async createAdminService(service: any): Promise<any> {
+    const { data } = await authorizeAxios.post('/admin/services', service)
+    return data
+  },
+
+  async updateAdminService(id: string, service: any): Promise<any> {
+    const { data } = await authorizeAxios.put(`/admin/services/${id}`, service)
+    return data
+  },
+
+  async deleteAdminService(id: string): Promise<any> {
+    const { data } = await authorizeAxios.delete(`/admin/services/${id}`)
     return data
   },
 }

@@ -132,7 +132,7 @@ export function AdminBookingsPage() {
 
   const getDisplayInfo = (booking: Booking) => {
     let name = booking.customerName || booking.customer?.fullName || "Khách Hàng Hệ Thống"
-    let plate = booking.licensePlate || booking.vehicle?.licensePlate || "XE_MÁY"
+    let plate = booking.licensePlate || (booking as any).carPlate || booking.vehicle?.licensePlate || "Chưa rõ"
     let type = booking.vehicleType || booking.vehicle?.vehicleType || "MOTORBIKE"
     let phone = booking.customerPhone || booking.customer?.phone || "N/A"
 

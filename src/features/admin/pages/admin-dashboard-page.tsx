@@ -87,7 +87,7 @@ export function AdminDashboardPage() {
     {
       ...adminMetrics[3],
       label: "Điểm hệ thống phát", // Đồng bộ Loyalty[cite: 1]
-      value: `${(dashboardStats?.issuedPoints || 0).toLocaleString()} pts`,
+      value: `${(dashboardStats?.issuedPoints || 0).toLocaleString()} điểm`,
     },
   ] : []
 

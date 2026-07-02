@@ -546,7 +546,7 @@ export function AdminReportsPage() {
                     </div>
                   </div>
                   <div className="z-10">
-                    <h3 className="text-2xl font-bold">{issuedPoints.toLocaleString()} pts</h3>
+                    <h3 className="text-2xl font-bold">{issuedPoints.toLocaleString()} điểm</h3>
                     <p className="flex items-center gap-1 text-xs font-semibold text-success mt-1">
                       <TrendingUp size={12} /> Tích điểm thành viên
                     </p>

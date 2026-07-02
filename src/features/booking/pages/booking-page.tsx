@@ -14,9 +14,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react'
 import toast from 'react-hot-toast'
 import {
-  servicesData,
-  type Vehicle,
-  type ServiceItem
+  type Vehicle
 } from '@/shared/data/mockData'
 import { formatCurrency, cn } from '@/shared/lib/utils'
 import { ClientSidebar } from '@/features/client/components/client-sidebar'
@@ -71,7 +69,8 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
 
   // Booking states
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
-  const [selectedService, setSelectedService] = useState<ServiceItem>(servicesData[1]) // Gold Cao cấp as default
+  const [dbServices, setDbServices] = useState<any[]>([])
+  const [selectedServicesList, setSelectedServicesList] = useState<any[]>([])
   const [selectedDateStr, setSelectedDateStr] = useState<string>(days[0].formattedDate)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('')
   const [availableSlots, setAvailableSlots] = useState<{ time: string; available: boolean }[]>([])
@@ -87,6 +86,35 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   useEffect(() => {
     dispatch(fetchVehicles())
   }, [dispatch])
+
+  // Load db services on mount
+  useEffect(() => {
+    const fetchDbServices = async () => {
+      try {
+        const data = await bookingService.getServices()
+        setDbServices(data)
+        if (data.length > 0) {
+          setSelectedServicesList([data[0]]) // Select first as default
+        }
+      } catch (err) {
+        console.error('Failed to load services:', err)
+      }
+    }
+    fetchDbServices()
+  }, [])
+
+  // Calculate dynamic fields
+  const totalAmount = useMemo(() => {
+    return selectedServicesList.reduce((acc, s) => acc + (s.basePrice || 0), 0)
+  }, [selectedServicesList])
+
+  const totalDuration = useMemo(() => {
+    return selectedServicesList.reduce((acc, s) => acc + (s.estimatedDuration || 0), 0)
+  }, [selectedServicesList])
+
+  const pointsEarned = useMemo(() => {
+    return Math.floor(totalAmount / 5000)
+  }, [totalAmount])
 
   // Select default vehicle when list is loaded
   useEffect(() => {
@@ -242,21 +270,20 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
       return
     }
 
-    let serviceTypeEnum = 'BASIC'
-    if (selectedService.id === 's2') {
-      serviceTypeEnum = 'PREMIUM'
-    } else if (selectedService.id === 's3') {
-      serviceTypeEnum = 'COMPREHENSIVE'
+    if (selectedServicesList.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một dịch vụ')
+      return
     }
 
+    const serviceIds = selectedServicesList.map(s => s.serviceId)
     const scheduledAt = `${selectedDateStr}T${selectedTimeSlot}:00`
 
     try {
       const result = await bookingService.createBooking({
         vehicleId: vId,
         scheduledAt,
-        serviceType: serviceTypeEnum,
-        notes: `Đặt lịch dịch vụ ${selectedService.name} qua ứng dụng khách hàng`
+        serviceIds,
+        notes: `Đặt lịch qua ứng dụng: ${selectedServicesList.map(s => s.name).join(', ')}`
       })
       toast.success('Đặt lịch thành công')
       dispatch(fetchBookings())
@@ -391,13 +418,25 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
               </h3>
 
               <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                {servicesData.map((service) => {
-                  const isSelected = selectedService.id === service.id
+                {dbServices.map((service) => {
+                  const isSelected = selectedServicesList.some(s => s.serviceId === service.serviceId)
+
+                  const handleSelect = () => {
+                    if (isSelected) {
+                      if (selectedServicesList.length > 1) {
+                        setSelectedServicesList(selectedServicesList.filter(s => s.serviceId !== service.serviceId))
+                      } else {
+                        toast.error('Vui lòng chọn ít nhất 1 dịch vụ')
+                      }
+                    } else {
+                      setSelectedServicesList([...selectedServicesList, service])
+                    }
+                  }
 
                   return (
                     <div
-                      key={service.id}
-                      onClick={() => setSelectedService(service)}
+                      key={service.serviceId}
+                      onClick={handleSelect}
                       className={cn(
                         'p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group relative min-h-[220px]',
                         isSelected
@@ -419,18 +458,18 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                                 : 'bg-slate-50 border-slate-200/50 text-[#4F46E5]'
                             )}
                           >
-                            {service.id === 's3' ? (
+                            {service.name.includes('toàn diện') || service.name.includes('Toàn diện') ? (
                               <Gem className='w-5 h-5' />
-                            ) : service.id === 's2' ? (
+                            ) : service.name.includes('cao cấp') || service.name.includes('Cao cấp') ? (
                               <Sparkles className='w-5 h-5' />
                             ) : (
                               <Droplet className='w-5 h-5' />
                             )}
                           </span>
                           {isSelected ? (
-                            <CheckCircle className='w-5 h-5 text-amber-450' />
+                            <CheckCircle className='w-5 h-5 text-amber-400' />
                           ) : (
-                            <div className='w-5 h-5 rounded-full border border-slate-200 group-hover:border-indigo-505 transition-colors' />
+                            <div className='w-5 h-5 rounded-full border border-slate-200 group-hover:border-indigo-500 transition-colors' />
                           )}
                         </div>
 
@@ -445,7 +484,7 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                         <p
                           className={cn(
                             'text-[11px] leading-relaxed font-medium mt-0.5',
-                            isSelected ? 'text-slate-300' : 'text-slate-455'
+                            isSelected ? 'text-slate-300' : 'text-slate-400'
                           )}
                         >
                           {service.description}
@@ -459,10 +498,10 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                             isSelected ? 'text-amber-400' : 'text-indigo-600'
                           )}
                         >
-                          {formatCurrency(service.price)}
+                          {formatCurrency(service.basePrice)}
                         </p>
                         <p className='text-[9px] font-bold text-emerald-600 mt-0.5 uppercase tracking-wide'>
-                          +{service.points} điểm thưởng
+                          +{Math.floor(service.basePrice / 5000)} điểm thưởng
                         </p>
                       </div>
                     </div>
@@ -609,17 +648,21 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                   Tổng cộng:
                 </span>
                 <span className='text-xl font-bold tracking-tight text-slate-900'>
-                  {formatCurrency(selectedService.price)}
+                  {formatCurrency(totalAmount)}
                 </span>
               </div>
               <p className='text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5'>
-                Tích lũy: +{selectedService.points} điểm thưởng
+                Tích lũy: +{pointsEarned} điểm thưởng ({totalDuration} phút)
               </p>
             </div>
 
             <div className='flex gap-3'>
               <button
-                onClick={() => setSelectedService(servicesData[0])}
+                onClick={() => {
+                  if (dbServices.length > 0) {
+                    setSelectedServicesList([dbServices[0]])
+                  }
+                }}
                 className='px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100/50 transition-all select-none cursor-pointer'
               >
                 Reset
@@ -738,15 +781,19 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                   <div className='bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 text-left text-[11px] space-y-1.5 text-slate-600 font-semibold'>
                     <p>
                       • <span className='text-slate-400'>Dịch vụ:</span>{' '}
-                      {selectedService.name}
+                      {selectedServicesList.map(s => s.name).join(', ')}
                     </p>
                     <p>
                       • <span className='text-slate-400'>Chi phí:</span>{' '}
-                      {formatCurrency(selectedService.price)}
+                      {formatCurrency(totalAmount)}
+                    </p>
+                    <p>
+                      • <span className='text-slate-400'>Thời lượng:</span>{' '}
+                      {totalDuration} phút
                     </p>
                     <p>
                       • <span className='text-slate-400'>Tích điểm:</span> +
-                      {selectedService.points} pts
+                      {pointsEarned} điểm
                     </p>
                   </div>
 
