@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/shared/components/ui/card'
 
 export function QuickActions() {
   return (
-    <section className="lg:col-span-4">
+    <section className="lg:col-span-4" data-tour="quick-actions">
       <div className="grid h-full grid-cols-2 gap-4">
         {quickActions.map((action) => {
           const Icon = action.icon

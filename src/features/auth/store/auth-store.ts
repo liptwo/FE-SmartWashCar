@@ -44,7 +44,24 @@ export const authStore = {
     const userStr = localStorage.getItem(USER_KEY)
     if (!userStr) return null
     try {
-      return JSON.parse(userStr)
+      const user = JSON.parse(userStr)
+      const token = this.getToken()
+      // If user.id is a phone number (e.g., only digits or starting with +84), correct it using the token
+      if (token && user && user.id && (user.id.startsWith('0') || user.id.startsWith('+84') || /^\d+$/.test(user.id))) {
+        try {
+          const base64Url = token.split('.')[1]
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+          const payload = JSON.parse(window.atob(base64))
+          const realId = payload.id || payload.userId || payload.customerId || payload.sub
+          if (realId) {
+            user.id = realId
+            localStorage.setItem(USER_KEY, JSON.stringify(user))
+          }
+        } catch (e) {
+          console.error('Error correcting stored user ID:', e)
+        }
+      }
+      return user
     } catch {
       return null
     }

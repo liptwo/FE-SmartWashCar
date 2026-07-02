@@ -39,7 +39,7 @@ export function MembershipCard() {
     : 100
 
   return (
-    <section className="lg:col-span-8">
+    <section className="lg:col-span-8" data-tour="membership-card">
       <div className="relative flex h-full min-h-[292px] flex-col justify-between overflow-hidden rounded-xl bg-primary p-6 text-primary-foreground">
         <div className="absolute -right-16 -top-16 size-64 rounded-full bg-white/10 blur-3xl" />
         <CarFront className="absolute bottom-6 right-6 opacity-20" size={120} />

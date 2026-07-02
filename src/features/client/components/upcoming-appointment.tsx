@@ -31,7 +31,7 @@ export function UpcomingAppointment() {
   }
 
   return (
-    <section className="col-span-12">
+    <section className="col-span-12" data-tour="upcoming-appointment">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-xl font-medium leading-7 text-on-surface">Lịch hẹn sắp tới</h3>
         <Link className="text-sm font-medium leading-4 text-primary hover:underline" to={routes.history}>

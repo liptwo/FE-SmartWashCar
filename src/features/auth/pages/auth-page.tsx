@@ -84,7 +84,18 @@ export function AuthPage({ mode }: AuthPageProps) {
           const userFullName = data.fullName || data.user?.name || data.user?.fullName
           const userPhone = data.phone || data.user?.phone || (!emailOrPhone.includes('@') ? emailOrPhone : undefined)
           const userEmail = (data as any).email || data.user?.email || (emailOrPhone.includes('@') ? emailOrPhone : undefined)
-          const userId = (data as any).id || (data as any).userId || data.user?.id || userPhone
+          
+          let tokenUserId = undefined
+          try {
+            const base64Url = token.split('.')[1]
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+            const payload = JSON.parse(window.atob(base64))
+            tokenUserId = payload.id || payload.userId || payload.customerId || payload.sub
+          } catch (e) {
+            console.error('Lỗi giải mã JWT token:', e)
+          }
+
+          const userId = (data as any).id || (data as any).userId || data.user?.id || tokenUserId || userPhone
 
           const loggedInUser = {
             id: userId,
