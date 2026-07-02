@@ -7,6 +7,7 @@ export const routes = {
   adminConfiguration: '/admin/configuration',
   adminPromotions: '/admin/promotions',
   adminReports: '/admin/reports',
+  adminServices: '/admin/services',
   dashboard: '/dashboard',
   profile: '/profile',
   vehicles: '/vehicles',

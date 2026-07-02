@@ -14,7 +14,8 @@ const navRouteMap: Partial<Record<AdminNavKey, AppPath>> = {
   promotion: routes.adminPromotions,
   articles: routes.adminArticles,
   configuration: routes.adminConfiguration,
-  reports: routes.adminReports
+  reports: routes.adminReports,
+  services: routes.adminServices
 }
 
 export function AdminSidebar({ activeItem = 'dashboard' }: AdminSidebarProps) {

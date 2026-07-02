@@ -11,6 +11,7 @@ import {
 } from 'react'
 import { AdminCustomerPage } from '@/features/admin/pages/admin-customer-page'
 import { AdminRewardsPage } from '@/features/admin/pages/admin-rewards-page'
+import { AdminServicesPage } from '@/features/admin/pages/admin-services-page'
 import { MainLayout } from '@/shared/components/layout/main-layout'
 import { AdminConfigurationPage } from '@/features/admin/pages/admin-configuration-page'
 import { AdminDashboardPage } from '@/features/admin/pages/admin-dashboard-page'
@@ -53,6 +54,7 @@ const protectedRoutes: AppPath[] = [
   routes.adminPromotions,
   routes.adminReports,
   routes.adminConfiguration,
+  routes.adminServices,
 ]
 
 const adminRoutes: AppPath[] = [
@@ -64,6 +66,7 @@ const adminRoutes: AppPath[] = [
   routes.adminPromotions,
   routes.adminReports,
   routes.adminArticles,
+  routes.adminServices,
 ]
 
 function Navigate({ to }: { to: AppPath }) {
@@ -138,7 +141,8 @@ export function AppRouter() {
       path === routes.rewards ||
       path === routes.adminPromotions ||
       path === routes.adminReports ||
-      path === routes.adminConfiguration ? (
+      path === routes.adminConfiguration ||
+      path === routes.adminServices ? (
         renderRoute(path)
       ) : (
         <MainLayout>{renderRoute(path)}</MainLayout>
@@ -167,6 +171,8 @@ function renderRoute(path: AppPath) {
   switch (path) {
     case routes.adminConfiguration:
       return <AdminConfigurationPage />
+    case routes.adminServices:
+      return <AdminServicesPage />
     case routes.adminPromotions:
       return <AdminPromotionsPage />
     case routes.adminReports:
