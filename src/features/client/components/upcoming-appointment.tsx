@@ -57,7 +57,9 @@ export function UpcomingAppointment() {
                   {latestBooking.vehicleDetails?.licensePlate || latestBooking.licensePlate || 'Chưa rõ xe'}
                 </p>
                 <p className="text-base leading-6 text-on-surface-variant">
-                  {latestBooking.serviceType} {latestBooking.notes ? `• ${latestBooking.notes}` : ''}
+                  {((latestBooking as any).selectedServices && (latestBooking as any).selectedServices.length > 0
+                    ? (latestBooking as any).selectedServices.map((s: any) => s.name || s.serviceName).join(', ')
+                    : (latestBooking.serviceType || 'Chưa chọn'))} {latestBooking.notes ? `• ${latestBooking.notes}` : ''}
                 </p>
               </div>
             </div>

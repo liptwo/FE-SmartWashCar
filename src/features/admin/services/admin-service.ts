@@ -44,6 +44,7 @@ export interface AdminBooking {
   customer?: any
   vehicle?: any
   vehicleType?: string
+  selectedServices?: any[]
 }
 
 export interface AdminVehicle {
@@ -268,6 +269,7 @@ function normalizeBooking(booking: any): AdminBooking {
     customer: booking.customer,
     vehicle: booking.vehicle,
     vehicleType: booking.vehicleType || booking.vehicle?.vehicleType || 'CAR',
+    selectedServices: booking.selectedServices ?? booking.selected_services ?? [],
   }
 }
 

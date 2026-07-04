@@ -9,7 +9,8 @@ import {
   Sun,
   Moon,
   CheckCircle,
-  PlusCircle
+  PlusCircle,
+  Notebook
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import toast from 'react-hot-toast'
@@ -23,6 +24,7 @@ import type { AppDispatch, RootState } from '@/app/store'
 import { fetchBookings, fetchVehicles } from '@/features/client/store/client-slice'
 import { vehicleService } from '@/features/client/services/vehicle-service'
 import { bookingService } from '@/features/booking/services/booking-service'
+import { promotionService } from '@/features/client/services/promotion-service'
 
 interface BookingPageProps {
   onBookingSuccess: (newBooking: any) => void
@@ -31,6 +33,7 @@ interface BookingPageProps {
 export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   const dispatch = useDispatch<AppDispatch>()
   const apiVehicles = useSelector((state: RootState) => state.client.vehicles.items)
+  const { tier } = useSelector((state: RootState) => state.client.loyalty)
 
   // Generate next 7 days dynamically starting from today
   const days = useMemo(() => {
@@ -77,6 +80,9 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
   const [isAddCarOpen, setIsAddCarOpen] = useState(false)
+  const [customerNotes, setCustomerNotes] = useState('')
+  const [activePromotions, setActivePromotions] = useState<any[]>([])
+  const [selectedPromo, setSelectedPromo] = useState<any | null>(null)
 
   // New car fields
   const [newPlate, setNewPlate] = useState('')
@@ -87,7 +93,7 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
     dispatch(fetchVehicles())
   }, [dispatch])
 
-  // Load db services on mount
+  // Load db services and promotions on mount
   useEffect(() => {
     const fetchDbServices = async () => {
       try {
@@ -100,21 +106,61 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
         console.error('Failed to load services:', err)
       }
     }
+    const fetchPromos = async () => {
+      try {
+        const data = await promotionService.getActivePromotions()
+        setActivePromotions(data)
+      } catch (err) {
+        console.error('Failed to load promotions:', err)
+      }
+    }
     fetchDbServices()
+    fetchPromos()
   }, [])
+
+  // Phân chia danh mục Combo và Dịch vụ đơn lẻ
+  const combos = useMemo(() => {
+    return dbServices.filter(s => s.combo && s.active)
+  }, [dbServices])
+
+  const singleServices = useMemo(() => {
+    return dbServices.filter(s => !s.combo && s.active)
+  }, [dbServices])
 
   // Calculate dynamic fields
   const totalAmount = useMemo(() => {
     return selectedServicesList.reduce((acc, s) => acc + (s.basePrice || 0), 0)
   }, [selectedServicesList])
 
+  const discountAmount = useMemo(() => {
+    if (!selectedPromo) return 0
+    if (selectedPromo.promoType === 'DISCOUNT') {
+      const val = selectedPromo.value || 0
+      if (val <= 100) {
+        return Math.round(totalAmount * (val / 100))
+      } else {
+        return val
+      }
+    } else if (selectedPromo.promoType === 'FREE_WASH') {
+      return totalAmount
+    } else if (selectedPromo.promoType === 'ADD_ON') {
+      return selectedPromo.value || 0
+    }
+    return 0
+  }, [selectedPromo, totalAmount])
+
+  const finalAmount = useMemo(() => {
+    const amt = totalAmount - discountAmount
+    return amt < 0 ? 0 : amt
+  }, [totalAmount, discountAmount])
+
   const totalDuration = useMemo(() => {
     return selectedServicesList.reduce((acc, s) => acc + (s.estimatedDuration || 0), 0)
   }, [selectedServicesList])
 
   const pointsEarned = useMemo(() => {
-    return Math.floor(totalAmount / 5000)
-  }, [totalAmount])
+    return Math.floor(finalAmount / 5000)
+  }, [finalAmount])
 
   // Select default vehicle when list is loaded
   useEffect(() => {
@@ -248,6 +294,42 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
     }
   }
 
+  // Tự động bỏ chọn bên đối lập khi chọn gói dịch vụ mới
+  const handleSelectService = (service: any) => {
+    const isSelected = selectedServicesList.some(s => s.serviceId === service.serviceId)
+
+    if (service.combo) {
+      // Chọn Combo: Bỏ chọn toàn bộ dịch vụ đơn lẻ khác, chỉ lấy combo này
+      if (isSelected) {
+        if (selectedServicesList.length > 1) {
+          setSelectedServicesList(selectedServicesList.filter(s => s.serviceId !== service.serviceId))
+        } else {
+          toast.error('Vui lòng chọn ít nhất 1 dịch vụ')
+        }
+      } else {
+        setSelectedServicesList([service])
+        toast.success(`Đã chọn gói combo: ${service.name}`)
+      }
+    } else {
+      // Chọn dịch vụ đơn: Bỏ chọn toàn bộ combo khác, cho chọn nhiều dịch vụ đơn lẻ
+      const listWithoutCombos = selectedServicesList.filter(s => !s.combo)
+      const isAlreadySelected = listWithoutCombos.some(s => s.serviceId === service.serviceId)
+
+      if (isAlreadySelected) {
+        if (listWithoutCombos.length > 1) {
+          setSelectedServicesList(listWithoutCombos.filter(s => s.serviceId !== service.serviceId))
+        } else {
+          toast.error('Vui lòng chọn ít nhất 1 dịch vụ đơn')
+        }
+      } else {
+        setSelectedServicesList([...listWithoutCombos, service])
+        if (selectedServicesList.some(s => s.combo)) {
+          toast.success('Đã chuyển sang chế độ chọn dịch vụ đơn lẻ')
+        }
+      }
+    }
+  }
+
   const handleConfirmBooking = async () => {
     if (!selectedVehicle) {
       toast.error('Vui lòng chọn hoặc thêm phương tiện trước')
@@ -278,12 +360,18 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
     const serviceIds = selectedServicesList.map(s => s.serviceId)
     const scheduledAt = `${selectedDateStr}T${selectedTimeSlot}:00`
 
+    // Đính kèm ghi chú khách hàng tự nhập, nếu trống thì tự động tạo theo tên các dịch vụ
+    const finalNotes = customerNotes.trim()
+      ? customerNotes.trim()
+      : `Đặt lịch qua ứng dụng: ${selectedServicesList.map(s => s.name).join(', ')}`
+
     try {
       const result = await bookingService.createBooking({
         vehicleId: vId,
         scheduledAt,
         serviceIds,
-        notes: `Đặt lịch qua ứng dụng: ${selectedServicesList.map(s => s.name).join(', ')}`
+        notes: finalNotes,
+        promoId: selectedPromo ? selectedPromo.promoId : undefined
       })
       toast.success('Đặt lịch thành công')
       dispatch(fetchBookings())
@@ -300,7 +388,7 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
       <ClientTopbar title="Đặt lịch dịch vụ" />
 
       <main className="min-h-screen px-6 pb-8 pt-24 lg:pl-[calc(16rem+24px)]">
-        <div className="mx-auto max-w-[1280px] space-y-8 pb-16 relative">
+        <div className="mx-auto max-w-[1280px] space-y-8 pb-24 relative">
           {/* 3-Step Wizard Indicator */}
           <div className='flex items-center justify-between max-w-2xl mx-auto mb-8 relative'>
             <div className='absolute top-1/2 left-0 w-full h-[0.5px] bg-slate-200 -translate-y-1/2 -z-10'></div>
@@ -315,10 +403,10 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
 
             {/* Step 2 */}
             <div className='flex flex-col items-center gap-2 bg-[#F8FAFC] px-4'>
-              <div className='w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 ring-4 ring-[#F8FAFC]'>
+              <div className='w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white ring-4 ring-[#F8FAFC] shadow-md shadow-indigo-100 animate-pulse'>
                 <Sparkles className='w-5 h-5' />
               </div>
-              <span className='text-xs font-semibold text-slate-405'>Dịch vụ</span>
+              <span className='text-xs font-bold text-indigo-600'>Dịch vụ</span>
             </div>
 
             {/* Step 3 */}
@@ -412,108 +500,158 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
             </div>
 
             {/* Column Right: Chọn gói dịch vụ (8 cols) */}
-            <div className='col-span-12 lg:col-span-8 space-y-4'>
+            <div className='col-span-12 lg:col-span-8 space-y-6'>
               <h3 className='text-sm font-bold text-slate-900 tracking-tight uppercase'>
                 2. Chọn gói dịch vụ
               </h3>
 
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                {dbServices.map((service) => {
-                  const isSelected = selectedServicesList.some(s => s.serviceId === service.serviceId)
-
-                  const handleSelect = () => {
-                    if (isSelected) {
-                      if (selectedServicesList.length > 1) {
-                        setSelectedServicesList(selectedServicesList.filter(s => s.serviceId !== service.serviceId))
-                      } else {
-                        toast.error('Vui lòng chọn ít nhất 1 dịch vụ')
-                      }
-                    } else {
-                      setSelectedServicesList([...selectedServicesList, service])
-                    }
-                  }
-
-                  return (
-                    <div
-                      key={service.serviceId}
-                      onClick={handleSelect}
-                      className={cn(
-                        'p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group relative min-h-[220px]',
-                        isSelected
-                          ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-[1.01]'
-                          : 'bg-white text-slate-800 border-slate-200 hover:border-indigo-500 shadow-xs'
-                      )}
-                    >
-                      {isSelected && (
-                        <div className='absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_20%_20%,_#fff_1px,_transparent_1px)] bg-[size:16px_16px] rounded-[15px]' />
-                      )}
-
-                      <div>
-                        <div className='flex justify-between items-start mb-4'>
-                          <span
-                            className={cn(
-                              'p-2 rounded-xl shrink-0 border flex items-center justify-center',
-                              isSelected
-                                ? 'bg-white/10 border-white/20 text-amber-400'
-                                : 'bg-slate-50 border-slate-200/50 text-[#4F46E5]'
-                            )}
-                          >
-                            {service.name.includes('toàn diện') || service.name.includes('Toàn diện') ? (
-                              <Gem className='w-5 h-5' />
-                            ) : service.name.includes('cao cấp') || service.name.includes('Cao cấp') ? (
-                              <Sparkles className='w-5 h-5' />
-                            ) : (
-                              <Droplet className='w-5 h-5' />
-                            )}
-                          </span>
-                          {isSelected ? (
-                            <CheckCircle className='w-5 h-5 text-amber-400' />
-                          ) : (
-                            <div className='w-5 h-5 rounded-full border border-slate-200 group-hover:border-indigo-500 transition-colors' />
+              {/* Combo packages section */}
+              {combos.length > 0 && (
+                <div className='space-y-3'>
+                  <div className='flex items-center gap-1.5'>
+                    <span className='w-1.5 h-3.5 bg-purple-650 rounded-full'></span>
+                    <h4 className='text-xs font-bold text-purple-800 uppercase tracking-wider'>Gói Combo Tiết Kiệm & Đa Dịch Vụ</h4>
+                  </div>
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    {combos.map((service) => {
+                      const isSelected = selectedServicesList.some(s => s.serviceId === service.serviceId)
+                      return (
+                        <div
+                          key={service.serviceId}
+                          onClick={() => handleSelectService(service)}
+                          className={cn(
+                            'p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group relative min-h-[190px]',
+                            isSelected
+                              ? 'bg-purple-950 text-white border-purple-950 shadow-md scale-[1.01]'
+                              : 'bg-white text-slate-800 border-slate-200 hover:border-purple-500 shadow-xs'
                           )}
+                        >
+                          <div>
+                            <div className='flex justify-between items-start mb-3'>
+                              <span
+                                className={cn(
+                                  'p-2 rounded-xl shrink-0 border flex items-center justify-center',
+                                  isSelected
+                                    ? 'bg-white/10 border-white/20 text-amber-400'
+                                    : 'bg-purple-50 border-purple-100 text-purple-700'
+                                )}
+                              >
+                                <Gem className='w-5 h-5' />
+                              </span>
+                              {isSelected ? (
+                                <CheckCircle className='w-5 h-5 text-amber-400' />
+                              ) : (
+                                <div className='w-5 h-5 rounded-full border border-slate-200 group-hover:border-purple-500 transition-colors' />
+                              )}
+                            </div>
+
+                            <h4 className='text-xs font-bold mb-1 uppercase tracking-tight'>{service.name}</h4>
+                            <p className={cn(
+                              'text-[10px] leading-relaxed font-semibold',
+                              isSelected ? 'text-purple-200' : 'text-slate-500'
+                            )}>
+                              {service.description}
+                            </p>
+                          </div>
+
+                          <div className='mt-4 flex justify-between items-end border-t border-slate-100/10 pt-3'>
+                            <div>
+                              <p className={cn('text-base font-bold tracking-tight', isSelected ? 'text-amber-400' : 'text-purple-700')}>
+                                {formatCurrency(service.basePrice)}
+                              </p>
+                              <p className='text-[8px] font-bold text-emerald-600 mt-0.5 uppercase tracking-wide'>
+                                +{service.points || Math.floor(service.basePrice / 5000)} pts
+                              </p>
+                            </div>
+                            <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider', isSelected ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800')}>
+                              {service.estimatedDuration} phút
+                            </span>
+                          </div>
                         </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
-                        <h4
+              {/* Single services section */}
+              {singleServices.length > 0 && (
+                <div className='space-y-3 pt-2'>
+                  <div className='flex items-center gap-1.5'>
+                    <span className='w-1.5 h-3.5 bg-indigo-650 rounded-full'></span>
+                    <h4 className='text-xs font-bold text-indigo-800 uppercase tracking-wider'>Dịch vụ Đơn Lẻ Tùy Chọn</h4>
+                  </div>
+                  <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                    {singleServices.map((service) => {
+                      const isSelected = selectedServicesList.some(s => s.serviceId === service.serviceId)
+                      return (
+                        <div
+                          key={service.serviceId}
+                          onClick={() => handleSelectService(service)}
                           className={cn(
-                            'text-xs font-bold mb-1.5 uppercase tracking-tight',
-                            isSelected ? 'text-white' : 'text-slate-800'
+                            'p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group relative min-h-[200px]',
+                            isSelected
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-[1.01]'
+                              : 'bg-white text-slate-800 border-slate-200 hover:border-indigo-500 shadow-xs'
                           )}
                         >
-                          {service.name}
-                        </h4>
-                        <p
-                          className={cn(
-                            'text-[11px] leading-relaxed font-medium mt-0.5',
-                            isSelected ? 'text-slate-300' : 'text-slate-400'
-                          )}
-                        >
-                          {service.description}
-                        </p>
-                      </div>
+                          <div>
+                            <div className='flex justify-between items-start mb-3'>
+                              <span
+                                className={cn(
+                                  'p-2 rounded-xl shrink-0 border flex items-center justify-center',
+                                  isSelected
+                                    ? 'bg-white/10 border-white/20 text-amber-400'
+                                    : 'bg-slate-50 border-slate-200/50 text-[#4F46E5]'
+                                )}
+                              >
+                                {service.name.includes('cao cấp') || service.name.includes('Cao cấp') ? (
+                                  <Sparkles className='w-5 h-5' />
+                                ) : (
+                                  <Droplet className='w-5 h-5' />
+                                )}
+                              </span>
+                              {isSelected ? (
+                                <CheckCircle className='w-5 h-5 text-amber-400' />
+                              ) : (
+                                <div className='w-5 h-5 rounded-full border border-slate-200 group-hover:border-indigo-500 transition-colors' />
+                              )}
+                            </div>
 
-                      <div className='mt-6'>
-                        <p
-                          className={cn(
-                            'text-base font-bold tracking-tight',
-                            isSelected ? 'text-amber-400' : 'text-indigo-600'
-                          )}
-                        >
-                          {formatCurrency(service.basePrice)}
-                        </p>
-                        <p className='text-[9px] font-bold text-emerald-600 mt-0.5 uppercase tracking-wide'>
-                          +{Math.floor(service.basePrice / 5000)} điểm thưởng
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+                            <h4 className='text-xs font-bold mb-1 uppercase tracking-tight'>{service.name}</h4>
+                            <p className={cn(
+                              'text-[10px] leading-relaxed font-semibold',
+                              isSelected ? 'text-slate-300' : 'text-slate-500'
+                            )}>
+                              {service.description}
+                            </p>
+                          </div>
+
+                          <div className='mt-4 flex justify-between items-end border-t border-slate-100/10 pt-3'>
+                            <div>
+                              <p className={cn('text-base font-bold tracking-tight', isSelected ? 'text-amber-400' : 'text-indigo-650')}>
+                                {formatCurrency(service.basePrice)}
+                              </p>
+                              <p className='text-[8px] font-bold text-emerald-600 mt-0.5 uppercase tracking-wide'>
+                                +{service.points || Math.floor(service.basePrice / 5000)} pts
+                              </p>
+                            </div>
+                            <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider', isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-800')}>
+                              {service.estimatedDuration}m
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Full width: Thời gian thực hiện (12 cols) */}
             <div className='col-span-12 space-y-4'>
               <h3 className='text-sm font-bold text-slate-900 tracking-tight uppercase'>
-                3. Thời gian thực hiện
+                3. Thời gian thực hiện & Ghi chú
               </h3>
 
               <div className='bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6'>
@@ -636,6 +774,126 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                     </>
                   )}
                 </div>
+
+                {/* Promotion Section */}
+                <div className='border-t border-slate-100 pt-5 space-y-3'>
+                  <div className='flex items-center gap-1.5 text-xs text-slate-800 font-bold uppercase tracking-wider'>
+                    <Sparkles className='w-4 h-4 text-indigo-500' />
+                    <span>Chọn chương trình khuyến mãi</span>
+                  </div>
+                  <p className='text-[10px] text-slate-400 font-semibold'>Chọn một mã ưu đãi khả dụng cho hạng thành viên của bạn để được giảm giá.</p>
+                  
+                  {activePromotions.length === 0 ? (
+                    <div className='p-3 text-center border border-slate-100 rounded-xl bg-slate-50 text-[10px] text-slate-400 font-medium'>
+                      Không có chương trình khuyến mãi nào đang diễn ra
+                    </div>
+                  ) : (
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                      {activePromotions.map((promo) => {
+                        const getTierRank = (t: string) => {
+                          const name = (t || '').toLowerCase()
+                          if (name === 'platinum') return 4
+                          if (name === 'gold') return 3
+                          if (name === 'silver') return 2
+                          return 1
+                        }
+                        const getTierRankFromTiers = (targetTiers: string) => {
+                          const tiers = (targetTiers || '').toUpperCase()
+                          if (tiers.includes('PLATINUM')) return 4
+                          if (tiers.includes('GOLD')) return 3
+                          if (tiers.includes('SILVER')) return 2
+                          return 1
+                        }
+                        const promoRank = getTierRankFromTiers(promo.targetTiers)
+                        const userRank = getTierRank(tier)
+                        const isEligible = userRank >= promoRank
+
+                        const isSelected = selectedPromo?.promoId === promo.promoId
+
+                        return (
+                          <div
+                            key={promo.promoId}
+                            onClick={() => {
+                              if (!isEligible) {
+                                toast.error(`Mã này yêu cầu hạng ${promo.targetTiers}`)
+                                return
+                              }
+                              if (isSelected) {
+                                setSelectedPromo(null)
+                                toast.success('Đã hủy áp dụng mã khuyến mãi')
+                              } else {
+                                setSelectedPromo(promo)
+                                toast.success(`Đã áp dụng mã: ${promo.name}`)
+                              }
+                            }}
+                            className={cn(
+                              'p-3.5 rounded-xl border flex flex-col justify-between transition-all relative overflow-hidden select-none cursor-pointer',
+                              isSelected
+                                ? 'border-emerald-600 bg-emerald-50/10'
+                                : isEligible
+                                  ? 'border-slate-200 bg-white hover:border-indigo-500'
+                                  : 'border-slate-150 bg-slate-50 opacity-60 cursor-not-allowed'
+                            )}
+                          >
+                            <div className='flex justify-between items-start gap-2'>
+                              <div className='flex items-center gap-2'>
+                                <div className={cn(
+                                  'p-1.5 rounded-lg border',
+                                  isSelected ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'
+                                )}>
+                                  <Sparkles className='w-4 h-4' />
+                                </div>
+                                <div>
+                                  <h5 className='text-xs font-bold text-slate-800 line-clamp-1'>{promo.name}</h5>
+                                  <p className='text-[9px] text-slate-400 font-semibold mt-0.5 line-clamp-1'>{promo.description || 'Ưu đãi dành cho bạn'}</p>
+                                </div>
+                              </div>
+                              <div className={cn(
+                                'w-4 h-4 rounded-full border flex items-center justify-center shrink-0',
+                                isSelected ? 'border-emerald-600 bg-emerald-600' : 'border-slate-300'
+                              )}>
+                                {isSelected && <div className='w-1.5 h-1.5 rounded-full bg-white'></div>}
+                              </div>
+                            </div>
+                            
+                            <div className='mt-2.5 pt-2 border-t border-slate-100 flex justify-between items-center text-[9px] font-bold text-slate-500'>
+                              <span className={cn(
+                                'px-1.5 py-0.5 rounded-md uppercase tracking-wider',
+                                isEligible ? 'bg-indigo-50 text-indigo-750' : 'bg-slate-200 text-slate-500'
+                              )}>
+                                {promo.targetTiers}
+                              </span>
+                              <span className='text-emerald-600'>
+                                {promo.promoType === 'DISCOUNT'
+                                  ? promo.value <= 100 ? `Giảm ${promo.value}%` : `Giảm ${formatCurrency(promo.value)}`
+                                  : promo.promoType === 'FREE_WASH'
+                                    ? 'Miễn phí rửa xe'
+                                    : 'Tặng kèm'
+                                }
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Customer Notes Field */}
+                <div className='border-t border-slate-100 pt-5 space-y-2'>
+                  <div className='flex items-center gap-1.5 text-xs text-slate-800 font-bold uppercase tracking-wider'>
+                    <Notebook className='w-4 h-4 text-slate-500' />
+                    <span>Lưu ý đặc biệt gửi cho cửa hàng</span>
+                  </div>
+                  <p className='text-[10px] text-slate-400 font-semibold'>Nhập các yêu cầu riêng như: rửa kỹ mâm xe, tẩy vết bẩn ở ghế phụ, v.v.</p>
+                  <textarea
+                    rows={3}
+                    value={customerNotes}
+                    onChange={(e) => setCustomerNotes(e.target.value)}
+                    placeholder='VD: Nhờ các kỹ thuật viên hút bụi kỹ cốp xe giúp tui nhé...'
+                    className='w-full px-4 py-3 border border-slate-200 bg-slate-50 focus:bg-white rounded-2xl text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-350'
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -647,9 +905,20 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                 <span className='text-xs text-slate-400 font-bold uppercase tracking-wide'>
                   Tổng cộng:
                 </span>
-                <span className='text-xl font-bold tracking-tight text-slate-900'>
-                  {formatCurrency(totalAmount)}
-                </span>
+                {selectedPromo ? (
+                  <div className='flex items-baseline gap-2'>
+                    <span className='text-xs line-through text-slate-400'>
+                      {formatCurrency(totalAmount)}
+                    </span>
+                    <span className='text-xl font-bold tracking-tight text-slate-900'>
+                      {formatCurrency(finalAmount)}
+                    </span>
+                  </div>
+                ) : (
+                  <span className='text-xl font-bold tracking-tight text-slate-900'>
+                    {formatCurrency(totalAmount)}
+                  </span>
+                )}
               </div>
               <p className='text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5'>
                 Tích lũy: +{pointsEarned} điểm thưởng ({totalDuration} phút)
@@ -662,6 +931,8 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                   if (dbServices.length > 0) {
                     setSelectedServicesList([dbServices[0]])
                   }
+                  setCustomerNotes('')
+                  setSelectedPromo(null)
                 }}
                 className='px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100/50 transition-all select-none cursor-pointer'
               >
@@ -785,7 +1056,14 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                     </p>
                     <p>
                       • <span className='text-slate-400'>Chi phí:</span>{' '}
-                      {formatCurrency(totalAmount)}
+                      {selectedPromo ? (
+                        <span>
+                          <span className='line-through text-slate-400 mr-2'>{formatCurrency(totalAmount)}</span>
+                          <span className='text-slate-800 font-bold'>{formatCurrency(finalAmount)}</span>
+                        </span>
+                      ) : (
+                        formatCurrency(totalAmount)
+                      )}
                     </p>
                     <p>
                       • <span className='text-slate-400'>Thời lượng:</span>{' '}

@@ -143,8 +143,11 @@ export function ClientHistoryPage() {
                             {booking.status}
                           </span>
                         </div>
+                        {/* Dynamic services list or legacy serviceType fallback */}
                         <p className="mb-1 text-sm font-medium text-on-surface-variant">
-                          {booking.serviceType} {booking.notes ? `• ${booking.notes}` : ''}
+                          {((booking as any).selectedServices && (booking as any).selectedServices.length > 0
+                            ? (booking as any).selectedServices.map((s: any) => s.name || s.serviceName).join(', ')
+                            : (booking.serviceType || 'Chưa chọn'))} {booking.notes ? `• ${booking.notes}` : ''}
                         </p>
                         <div className="flex items-center gap-2 text-secondary">
                           <Clock size={18} />

@@ -13,9 +13,9 @@ interface WashService {
   description: string
   basePrice: number
   estimatedDuration: number
-  isActive: boolean
+  active: boolean
   points: number
-  isCombo: boolean
+  combo: boolean
   bundledServiceIds?: string
 }
 
@@ -73,8 +73,8 @@ export function AdminServicesPage() {
     setFormDesc(s.description || '')
     setFormPrice(s.basePrice)
     setFormDuration(s.estimatedDuration)
-    setFormActive(s.isActive)
-    setFormCombo(s.isCombo)
+    setFormActive(s.active)
+    setFormCombo(s.combo)
     
     const bundledIds = s.bundledServiceIds ? s.bundledServiceIds.split(',').filter(Boolean) : []
     setSelectedBundledIds(bundledIds)
@@ -93,10 +93,10 @@ export function AdminServicesPage() {
       description: formDesc,
       basePrice: Number(formPrice),
       estimatedDuration: Number(formDuration),
-      isActive: formActive,
-      isCombo: formCombo,
+      active: formActive,
+      combo: formCombo,
       bundledServiceIds: formCombo ? selectedBundledIds.join(',') : '',
-      points: Math.floor(Number(formPrice) / 5000) // Tự động tính điểm configuration theo tỉ lệ giá
+      points: Math.floor(Number(formPrice) / 5000) // Tự động tính điểm theo tỉ lệ giá
     }
 
     try {
@@ -128,11 +128,21 @@ export function AdminServicesPage() {
   }
 
   const toggleBundledService = (id: string) => {
+    let nextIds: string[]
     if (selectedBundledIds.includes(id)) {
-      setSelectedBundledIds(selectedBundledIds.filter(x => x !== id))
+      nextIds = selectedBundledIds.filter(x => x !== id)
     } else {
-      setSelectedBundledIds([...selectedBundledIds, id])
+      nextIds = [...selectedBundledIds, id]
     }
+    setSelectedBundledIds(nextIds)
+
+    // Tự động cộng dồn thời gian và giá từ việc thêm các dịch vụ đơn
+    const selectedServices = services.filter(s => nextIds.includes(s.serviceId))
+    const sumPrice = selectedServices.reduce((sum, s) => sum + s.basePrice, 0)
+    const sumDuration = selectedServices.reduce((sum, s) => sum + s.estimatedDuration, 0)
+
+    setFormPrice(sumPrice)
+    setFormDuration(sumDuration)
   }
 
   const getBundledNames = (bundledIdsStr?: string) => {
@@ -143,20 +153,20 @@ export function AdminServicesPage() {
       .map(s => s.name)
       .join(', ')
   }
-
+  
   // Filter lists
   const filteredServices = services.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchText.toLowerCase()) || 
                           (s.description && s.description.toLowerCase().includes(searchText.toLowerCase()))
     
     if (!matchesSearch) return false
-    if (activeTab === 'SINGLE') return !s.isCombo
-    if (activeTab === 'COMBO') return s.isCombo
+    if (activeTab === 'SINGLE') return !s.combo
+    if (activeTab === 'COMBO') return s.combo
     return true
   })
 
   // List of single services available for bundling in combo
-  const availableForCombo = services.filter(s => !s.isCombo && s.isActive && (editingService ? s.serviceId !== editingService.serviceId : true))
+  const availableForCombo = services.filter(s => !s.combo && s.active && (editingService ? s.serviceId !== editingService.serviceId : true))
 
   return (
     <div className='min-h-screen bg-background text-on-surface'>
@@ -206,7 +216,7 @@ export function AdminServicesPage() {
                   activeTab === 'SINGLE' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-850'
                 )}
               >
-                Dịch vụ đơn ({services.filter(s => !s.isCombo).length})
+                Dịch vụ đơn ({services.filter(s => !s.combo).length})
               </button>
               <button
                 onClick={() => setActiveTab('COMBO')}
@@ -215,7 +225,7 @@ export function AdminServicesPage() {
                   activeTab === 'COMBO' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-850'
                 )}
               >
-                Gói Combo ({services.filter(s => s.isCombo).length})
+                Gói Combo ({services.filter(s => s.combo).length})
               </button>
             </div>
 
@@ -256,7 +266,7 @@ export function AdminServicesPage() {
                         <tr key={s.serviceId} className='hover:bg-slate-50/50 transition-colors'>
                           <td className='px-5 py-4 font-bold text-xs text-slate-900'>
                             <div className='flex items-center gap-2'>
-                              {s.isCombo ? (
+                              {s.combo ? (
                                 <Package className='w-4 h-4 text-purple-600 shrink-0' />
                               ) : (
                                 <Droplet className='w-4 h-4 text-indigo-600 shrink-0' />
@@ -266,7 +276,7 @@ export function AdminServicesPage() {
                           </td>
                           <td className='px-5 py-4 max-w-xs'>
                             <p className='text-xs text-slate-600 truncate'>{s.description || 'Chưa cập nhật'}</p>
-                            {s.isCombo && bundledNames && (
+                            {s.combo && bundledNames && (
                               <p className='text-[9px] text-purple-600 font-bold uppercase mt-1 tracking-wide'>
                                 Bao gồm: {bundledNames}
                               </p>
@@ -275,7 +285,7 @@ export function AdminServicesPage() {
                           <td className='px-5 py-4 text-xs font-bold text-slate-800'>{formatCurrency(s.basePrice)}</td>
                           <td className='px-5 py-4 text-xs font-medium text-slate-650'>{s.estimatedDuration} phút</td>
                           <td className='px-5 py-4'>
-                            {s.isCombo ? (
+                            {s.combo ? (
                               <span className='px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-100 uppercase tracking-wide'>Combo</span>
                             ) : (
                               <span className='px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wide'>Dịch vụ đơn</span>
@@ -283,7 +293,7 @@ export function AdminServicesPage() {
                           </td>
                           <td className='px-5 py-4 text-center text-xs font-bold text-emerald-650'>+{s.points || Math.floor(s.basePrice / 5000)} pts</td>
                           <td className='px-5 py-4 text-center'>
-                            {s.isActive ? (
+                            {s.active ? (
                               <span className='inline-flex items-center gap-1 text-emerald-600 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100'><CheckCircle2 className='w-3.5 h-3.5' /> Hoạt động</span>
                             ) : (
                               <span className='inline-flex items-center gap-1 text-rose-600 text-[10px] font-bold uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100'><XCircle className='w-3.5 h-3.5' /> Tạm ngưng</span>
@@ -302,7 +312,7 @@ export function AdminServicesPage() {
                                 onClick={() => handleDelete(s.serviceId)}
                                 className='p-1.5 text-slate-400 hover:text-rose-650 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer'
                                 title='Ngưng hoạt động'
-                                disabled={!s.isActive}
+                                disabled={!s.active}
                               >
                                 <Trash2 className='w-4 h-4' />
                               </button>

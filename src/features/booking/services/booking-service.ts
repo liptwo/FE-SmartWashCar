@@ -3,9 +3,9 @@ import { authorizeAxios } from '@/shared/lib/api-client'
 export interface CreateBookingRequest {
   vehicleId: string
   scheduledAt: string // ISO string or LocalDateTime format (yyyy-MM-ddTHH:mm:ss)
-  serviceType?: string
   serviceIds?: string[]
   notes?: string
+  promoId?: string
 }
 
 export interface BookingResponse {
