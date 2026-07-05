@@ -3,17 +3,14 @@ import toast from 'react-hot-toast'
 import { Save, RefreshCw, AlertTriangle } from 'lucide-react'
 import { AdminSidebar } from '@/features/admin/components/admin-sidebar'
 import { AdminTopbar } from '@/features/admin/components/admin-topbar'
-import { PointRateCard, RewardCatalog } from '@/features/admin/components/reward-catalog'
 import { TierRuleCard } from '@/features/admin/components/tier-rule-card'
 import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
 import { 
-  tierRules as defaultTierRules, 
-  rewardItems as defaultRewardItems
+  tierRules as defaultTierRules
 } from '@/features/admin/data/admin-configuration'
 import type {
-  TierRule,
-  RewardItem
+  TierRule
 } from '@/features/admin/data/admin-configuration'
 import { authorizeAxios } from '@/shared/lib/api-client'
 import { adminService } from '@/features/admin/services/admin-service'
@@ -23,7 +20,6 @@ export function AdminConfigurationPage() {
   const [saving, setSaving] = useState(false)
   
   const [tierRules, setTierRules] = useState<TierRule[]>([])
-  const [rewardItems, setRewardItems] = useState<RewardItem[]>([])
   const [pointRate, setPointRate] = useState<string>('10.000')
 
   useEffect(() => {
@@ -39,17 +35,6 @@ export function AdminConfigurationPage() {
       } catch (err) {
         setTierRules(defaultTierRules)
         setPointRate('10.000')
-      }
-
-      try {
-        const rewards = await adminService.getRewards()
-        if (rewards && rewards.length > 0) {
-          setRewardItems(rewards)
-        } else {
-          setRewardItems(defaultRewardItems)
-        }
-      } catch (err) {
-        setRewardItems(defaultRewardItems)
       }
     }
 
@@ -73,28 +58,6 @@ export function AdminConfigurationPage() {
     const updated = [...tierRules]
     updated[index] = updatedRule
     setTierRules(updated)
-  }
-
-  const handleAddReward = async (newItem: RewardItem) => {
-    try {
-      const added = await adminService.addReward(newItem)
-      setRewardItems([...rewardItems, added])
-    } catch (err) {
-      toast.error('Lỗi khi thêm phần thưởng!')
-    }
-  }
-
-  const handleDeleteReward = async (index: number) => {
-    try {
-      const rewardToDelete = rewardItems[index]
-      // Use id if exists, otherwise fallback to index
-      const id = (rewardToDelete as any).id !== undefined ? (rewardToDelete as any).id : index
-      await adminService.deleteReward(id)
-      const updated = rewardItems.filter((_, i) => i !== index)
-      setRewardItems(updated)
-    } catch (err) {
-      toast.error('Lỗi khi xóa phần thưởng!')
-    }
   }
 
   const handleSaveChanges = async () => {
@@ -135,17 +98,6 @@ export function AdminConfigurationPage() {
           </section>
 
           <section className="col-span-12 space-y-6 lg:col-span-5">
-            <PointRateCard 
-              rate={pointRate} 
-              onChange={setPointRate} 
-            />
-            
-            <RewardCatalog 
-              rewards={rewardItems}
-              onAddReward={handleAddReward}
-              onDeleteReward={handleDeleteReward}
-            />
-            
             {/* System Actions card */}
             <Card className="p-6 shadow-sm border border-slate-100">
               <h3 className="mb-2 text-xl font-medium leading-7 text-on-surface flex items-center gap-2">

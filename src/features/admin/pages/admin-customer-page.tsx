@@ -194,6 +194,7 @@ export function AdminCustomerPage() {
               <th className="p-4">Số điện thoại</th>
               <th className="p-4">Hạng</th>
               <th className="p-4">Điểm</th>
+              <th className="p-4 text-right">Tổng chi tiêu</th>
               <th className="p-4 text-center">Số lần rửa</th>
               <th className="p-4">Lần cuối</th>
               <th className="p-4 w-16"></th>
@@ -233,6 +234,9 @@ export function AdminCustomerPage() {
                     </span>
                   </td>
                   <td className="p-4 font-semibold text-slate-700">{customer.totalPoints}</td>
+                  <td className="p-4 text-right font-bold text-blue-900">
+                    {(customer.totalSpend || 0).toLocaleString('vi-VN')}đ
+                  </td>
                   <td className="p-4 text-center font-medium">{customer.totalVisits}</td>
                   <td className="p-4 text-slate-500">
                     {customer.lastVisitAt ? new Date(customer.lastVisitAt).toLocaleDateString('vi-VN') : 'Chưa có'}
@@ -252,7 +256,7 @@ export function AdminCustomerPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="p-10 text-center text-slate-400 font-medium">
+                <td colSpan={9} className="p-10 text-center text-slate-400 font-medium">
                   {loading ? 'Đang tải danh sách...' : 'Không tìm thấy kết quả phù hợp!'}
                 </td>
               </tr>
@@ -296,9 +300,11 @@ export function AdminCustomerPage() {
                   <h2 className="text-xl font-bold text-slate-800">{currentCustomer.fullName}</h2>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                      {currentCustomer.tier} MEMBER
+                      {currentCustomer.tier}
                     </span>
-                    <span className="text-xs text-slate-400">• {currentCustomer.totalPoints} điểm tích lũy</span>
+                    <span className="text-xs text-slate-400">
+                      • {currentCustomer.totalPoints} điểm • Đã chi tiêu: <span className="font-bold text-blue-900">{currentCustomer.totalSpend.toLocaleString('vi-VN')}đ</span>
+                    </span>
                   </div>
                 </div>
               </div>
