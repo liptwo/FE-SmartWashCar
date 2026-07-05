@@ -5,6 +5,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Phone, Menu, X, Bell, HelpCircle } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import logo from '@/shared/assets/logo.png'
+import { authStore } from '@/features/auth/store/auth-store'
 export function AppHeader() {
   const { path } = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -61,11 +62,19 @@ export function AppHeader() {
                 1900 1234
               </a>
             </div>
-            <Link to={routes.login}>
-              <Button size="sm" className="rounded-full font-bold px-5 shadow-sm">
-                Đăng nhập
-              </Button>
-            </Link>
+            {authStore.isAuthenticated() ? (
+              <Link to={authStore.getUser()?.role === 'ADMIN' ? routes.admin : routes.dashboard}>
+                <Button size="sm" className="rounded-full font-bold px-5 shadow-sm">
+                  Bảng điều khiển
+                </Button>
+              </Link>
+            ) : (
+              <Link to={routes.login}>
+                <Button size="sm" className="rounded-full font-bold px-5 shadow-sm">
+                  Đăng nhập
+                </Button>
+              </Link>
+            )}
           </>
         ) : (
           <div className="flex items-center gap-4" aria-label="Tác vụ tài khoản">
@@ -124,11 +133,19 @@ export function AppHeader() {
               <Phone className="h-4 w-4" />
               1900 1234
             </a>
-            <Link to={routes.login} onClick={() => setMobileMenuOpen(false)}>
-              <Button className="w-full rounded-full font-bold" size="sm">
-                Đăng nhập
-              </Button>
-            </Link>
+            {authStore.isAuthenticated() ? (
+              <Link to={authStore.getUser()?.role === 'ADMIN' ? routes.admin : routes.dashboard} onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full rounded-full font-bold" size="sm">
+                  Bảng điều khiển
+                </Button>
+              </Link>
+            ) : (
+              <Link to={routes.login} onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full rounded-full font-bold" size="sm">
+                  Đăng nhập
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       )}

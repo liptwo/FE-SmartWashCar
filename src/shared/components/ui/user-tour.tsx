@@ -29,12 +29,6 @@ const DASHBOARD_STEPS: TourStep[] = [
     content: 'Theo dõi các lịch hẹn rửa xe sắp tới của bạn cùng với trạng thái xử lý thực tế.',
     position: 'top',
   },
-  {
-    selector: '[data-tour="promotions-section"]',
-    title: 'Khuyến Mãi Hấp Dẫn 🎁',
-    content: 'Đừng bỏ lỡ các chương trình ưu đãi và khuyến mãi hấp dẫn nhất từ Smart Wash Car.',
-    position: 'top',
-  },
 ]
 
 export function UserTour() {
