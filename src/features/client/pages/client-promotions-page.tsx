@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
-import { Gift, Layers, Percent } from 'lucide-react'
+import { Gift, Percent } from 'lucide-react'
 import { ClientSidebar } from '@/features/client/components/client-sidebar'
 import { ClientTopbar } from '@/features/client/components/client-topbar'
 import { Button } from '@/shared/components/ui/button'
@@ -79,18 +79,11 @@ export default function ClientPromotionsPage() {
     }
   }
 
-  const getIconInfo = (promoType: string) => {
-    switch (promoType) {
-      case 'DISCOUNT':
-        return { icon: Percent }
-      case 'FREE_WASH':
-        return { icon: Gift }
-      case 'ADD_ON':
-        return { icon: Layers }
-      case 'BONUS_POINTS':
-      default:
-        return { icon: Gift }
+  const getIconInfo = (value: number) => {
+    if (value <= 100) {
+      return { icon: Percent }
     }
+    return { icon: Gift }
   }
 
   useEffect(() => {
@@ -100,7 +93,7 @@ export default function ClientPromotionsPage() {
         const mapped = data.map((item) => {
           const rank = getTierRankFromTiers(item.targetTiers)
           const tierInfo = getTierInfo(rank)
-          const iconInfo = getIconInfo(item.promoType)
+          const iconInfo = getIconInfo(item.value)
           
           let expiryText = 'Hạn dùng: Vô thời hạn'
           if (item.endsAt) {

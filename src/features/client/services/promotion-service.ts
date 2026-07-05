@@ -12,6 +12,7 @@ export interface PromotionResponse {
   isActive: boolean
   usageLimit?: number
   usageCount: number
+  maxDiscount?: number
   createdAt: string
 }
 

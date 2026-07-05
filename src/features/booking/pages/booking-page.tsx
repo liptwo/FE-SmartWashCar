@@ -10,7 +10,8 @@ import {
   Moon,
   CheckCircle,
   PlusCircle,
-  Notebook
+  Notebook,
+  Gift
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import toast from 'react-hot-toast'
@@ -33,7 +34,7 @@ interface BookingPageProps {
 export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   const dispatch = useDispatch<AppDispatch>()
   const apiVehicles = useSelector((state: RootState) => state.client.vehicles.items)
-  const { tier } = useSelector((state: RootState) => state.client.loyalty)
+  const { tier, balance } = useSelector((state: RootState) => state.client.loyalty)
 
   // Generate next 7 days dynamically starting from today
   const days = useMemo(() => {
@@ -83,6 +84,9 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   const [customerNotes, setCustomerNotes] = useState('')
   const [activePromotions, setActivePromotions] = useState<any[]>([])
   const [selectedPromo, setSelectedPromo] = useState<any | null>(null)
+  
+  // Trạng thái sử dụng điểm tích lũy
+  const [usePoints, setUsePoints] = useState(false)
 
   // New car fields
   const [newPlate, setNewPlate] = useState('')
@@ -134,25 +138,49 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
 
   const discountAmount = useMemo(() => {
     if (!selectedPromo) return 0
-    if (selectedPromo.promoType === 'DISCOUNT') {
-      const val = selectedPromo.value || 0
-      if (val <= 100) {
-        return Math.round(totalAmount * (val / 100))
-      } else {
-        return val
+    const val = selectedPromo.value || 0
+    if (val <= 100) {
+      let calc = Math.round(totalAmount * (val / 100))
+      if (selectedPromo.maxDiscount && calc > selectedPromo.maxDiscount) {
+        calc = selectedPromo.maxDiscount
       }
-    } else if (selectedPromo.promoType === 'FREE_WASH') {
-      return totalAmount
-    } else if (selectedPromo.promoType === 'ADD_ON') {
-      return selectedPromo.value || 0
+      return calc
+    } else {
+      return val
     }
-    return 0
   }, [selectedPromo, totalAmount])
 
-  const finalAmount = useMemo(() => {
+  // Tính toán số tiền được khấu trừ từ điểm (1 điểm = 100đ)
+  const amountAfterPromo = useMemo(() => {
     const amt = totalAmount - discountAmount
     return amt < 0 ? 0 : amt
   }, [totalAmount, discountAmount])
+
+  const { pointsToUse, pointsDiscountAmount } = useMemo(() => {
+    if (!usePoints || balance <= 0) {
+      return { pointsToUse: 0, pointsDiscountAmount: 0 }
+    }
+    const maxPotentialDiscount = balance * 100
+    if (maxPotentialDiscount >= amountAfterPromo) {
+      // Khấu trừ toàn bộ hóa đơn về 0đ
+      const neededPoints = Math.ceil(amountAfterPromo / 100)
+      return {
+        pointsToUse: neededPoints,
+        pointsDiscountAmount: neededPoints * 100
+      }
+    } else {
+      // Khấu trừ tối đa điểm đang có
+      return {
+        pointsToUse: balance,
+        pointsDiscountAmount: balance * 100
+      }
+    }
+  }, [usePoints, balance, amountAfterPromo])
+
+  const finalAmount = useMemo(() => {
+    const amt = amountAfterPromo - pointsDiscountAmount
+    return amt < 0 ? 0 : amt
+  }, [amountAfterPromo, pointsDiscountAmount])
 
   const totalDuration = useMemo(() => {
     return selectedServicesList.reduce((acc, s) => acc + (s.estimatedDuration || 0), 0)
@@ -371,9 +399,11 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
         scheduledAt,
         serviceIds,
         notes: finalNotes,
-        promoId: selectedPromo ? selectedPromo.promoId : undefined
+        promoId: selectedPromo ? selectedPromo.promoId : undefined,
+        usedPoints: pointsToUse
       })
       toast.success('Đặt lịch thành công')
+      setUsePoints(false) // Reset state đổi điểm
       dispatch(fetchBookings())
       onBookingSuccess(result)
       setIsSuccessModalOpen(true)
@@ -864,11 +894,9 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                                 {promo.targetTiers}
                               </span>
                               <span className='text-emerald-600'>
-                                {promo.promoType === 'DISCOUNT'
-                                  ? promo.value <= 100 ? `Giảm ${promo.value}%` : `Giảm ${formatCurrency(promo.value)}`
-                                  : promo.promoType === 'FREE_WASH'
-                                    ? 'Miễn phí rửa xe'
-                                    : 'Tặng kèm'
+                                {promo.value <= 100 
+                                  ? `Giảm ${promo.value}%${promo.maxDiscount ? ` (tối đa ${formatCurrency(promo.maxDiscount)})` : ''}` 
+                                  : `Giảm ${formatCurrency(promo.value)}`
                                 }
                               </span>
                             </div>
@@ -876,6 +904,46 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                         )
                       })}
                     </div>
+                  )}
+                </div>
+
+                {/* Phân hệ sử dụng điểm tích lũy */}
+                <div className='border-t border-slate-100 pt-5 space-y-3'>
+                  <div className='flex items-center gap-1.5 text-xs text-slate-800 font-bold uppercase tracking-wider'>
+                    <Gift className='w-4 h-4 text-indigo-500' />
+                    <span>Sử dụng điểm tích lũy</span>
+                  </div>
+                  <div className='flex items-center justify-between p-4 bg-slate-50 border border-slate-200/80 rounded-2xl'>
+                    <div className='space-y-0.5'>
+                      <p className='text-xs font-bold text-slate-800'>
+                        Số dư điểm của bạn: <span className='text-indigo-600'>{balance || 0} pts</span>
+                      </p>
+                      <p className='text-[10px] text-slate-450 font-semibold'>
+                        Tỷ lệ quy đổi: 1 điểm = 100đ (Khấu trừ tối đa bằng số tiền thanh toán)
+                      </p>
+                    </div>
+
+                    <label className='relative inline-flex items-center cursor-pointer select-none'>
+                      <input 
+                        type='checkbox' 
+                        disabled={!balance || balance <= 0}
+                        checked={usePoints} 
+                        onChange={(e) => setUsePoints(e.target.checked)} 
+                        className='sr-only peer' 
+                      />
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+
+                  {usePoints && pointsToUse > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className='p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl text-[10px] text-emerald-800 font-bold flex items-center justify-between'
+                    >
+                      <span>Đã áp dụng khấu trừ bằng điểm:</span>
+                      <span>-{pointsToUse} pts (Giảm {formatCurrency(pointsDiscountAmount)})</span>
+                    </motion.div>
                   )}
                 </div>
 
@@ -905,7 +973,7 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                 <span className='text-xs text-slate-400 font-bold uppercase tracking-wide'>
                   Tổng cộng:
                 </span>
-                {selectedPromo ? (
+                {selectedPromo || pointsDiscountAmount > 0 ? (
                   <div className='flex items-baseline gap-2'>
                     <span className='text-xs line-through text-slate-400'>
                       {formatCurrency(totalAmount)}
@@ -933,6 +1001,7 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                   }
                   setCustomerNotes('')
                   setSelectedPromo(null)
+                  setUsePoints(false)
                 }}
                 className='px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100/50 transition-all select-none cursor-pointer'
               >
@@ -1056,7 +1125,7 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                     </p>
                     <p>
                       • <span className='text-slate-400'>Chi phí:</span>{' '}
-                      {selectedPromo ? (
+                      {selectedPromo || pointsDiscountAmount > 0 ? (
                         <span>
                           <span className='line-through text-slate-400 mr-2'>{formatCurrency(totalAmount)}</span>
                           <span className='text-slate-800 font-bold'>{formatCurrency(finalAmount)}</span>

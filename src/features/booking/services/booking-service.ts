@@ -6,6 +6,7 @@ export interface CreateBookingRequest {
   serviceIds?: string[]
   notes?: string
   promoId?: string
+  usedPoints?: number
 }
 
 export interface BookingResponse {
