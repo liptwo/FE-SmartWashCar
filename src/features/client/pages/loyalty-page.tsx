@@ -54,12 +54,13 @@ export function LoyaltyPage() {
     }
   }, [loadPointHistory, user?.id, dispatch])
 
-  // Filter history based on transactionType
+  // Filter history based on type
   const filteredHistory = useMemo(() => {
     return history.filter((item) => {
+      const type = item.type || item.transactionType
       if (filterType === 'all') return true
-      if (filterType === 'earn') return item.transactionType === 'EARN'
-      if (filterType === 'redeem') return item.transactionType === 'REDEEM'
+      if (filterType === 'earn') return type === 'EARN'
+      if (filterType === 'redeem') return type === 'REDEEM'
       return false // 'expire' is mock or not in API
     })
   }, [history, filterType])
@@ -355,7 +356,7 @@ export function LoyaltyPage() {
                 </div>
               ) : filteredHistory.length > 0 ? (
                 filteredHistory.map((item, index) => {
-                  const isEarn = item.transactionType === 'EARN'
+                  const isEarn = (item.type || item.transactionType) === 'EARN'
                   return (
                     <motion.div
                       key={item.id}

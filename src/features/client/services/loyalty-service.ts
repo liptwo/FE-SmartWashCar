@@ -25,6 +25,7 @@ export interface PointHistoryResponse {
   customerId: string
   points: number
   transactionType: 'EARN' | 'REDEEM'
+  type: 'EARN' | 'REDEEM'
   amountPaid?: number
   description?: string
   createdAt: string
