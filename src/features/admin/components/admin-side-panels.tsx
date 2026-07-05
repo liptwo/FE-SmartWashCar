@@ -1,51 +1,76 @@
-import { ArrowRight, Clock, Sparkles } from 'lucide-react'
-import { inventoryAlert, queueItems, tierDistribution, type QueueItem } from '@/features/admin/data/admin-dashboard'
+import { Clock, Sparkles } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { cn } from '@/shared/lib/utils'
 
-const statusClasses: Record<QueueItem['tone'], string> = {
+const statusClasses: Record<string, string> = {
   warning: 'bg-warning/10 text-warning',
   info: 'bg-info/10 text-info',
   success: 'bg-success/10 text-success',
 }
 
-export function QueuePanel() {
+// =========================================================================
+// 🌟 1. PANEL HÀNG ĐỢI ĐỘNG: Đồng bộ khớp nối dữ liệu thực tế từ table Bookings
+// =========================================================================
+export function QueuePanel({ items }: { items: any[] }) {
+  const safeItems = Array.isArray(items) ? items : []
+
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm bg-white border border-slate-100 rounded-2xl">
       <CardContent className="p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-medium uppercase leading-4 text-primary">Queue hôm nay</h3>
-          <span className="rounded-full bg-surface-container px-2 py-0.5 text-[10px] font-medium">48 Total</span>
+          <h3 className="text-sm font-bold uppercase tracking-tight text-primary">Queue hôm nay</h3>
+          <span className="rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px] font-bold">
+            {safeItems.length} Total
+          </span>
         </div>
 
-        <div className="custom-scrollbar max-h-[400px] space-y-4 overflow-y-auto pr-1">
-          {queueItems.map((item, index) => (
-            <div
-              className={cn(
-                'flex items-center gap-4 rounded-lg border border-border p-3 transition-colors hover:border-primary',
-                index === 0 && 'bg-surface-container-low',
-              )}
-              key={item.plate}
-            >
-              <div className="grid size-12 shrink-0 place-items-center rounded border border-border bg-surface">
-                <span className="text-[10px] font-medium leading-4 text-on-surface-variant">{item.time}</span>
-                <Clock className="text-on-surface-variant" size={14} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium uppercase leading-4 tracking-tight text-on-surface">
-                  {item.plate}
-                </p>
-                <p className="text-[10px] leading-4 text-on-surface-variant">{item.service}</p>
-              </div>
-              <span className={cn('whitespace-nowrap rounded-lg px-2 py-1 text-[10px] font-medium', statusClasses[item.tone])}>
-                {item.status}
-              </span>
-            </div>
-          ))}
+        <div className="custom-scrollbar max-h-100 space-y-4 overflow-y-auto pr-1">
+          {safeItems.length === 0 ? (
+            <p className="text-xs text-slate-400 py-6 text-center font-medium">Hiện chưa có xe nào trong hàng chờ hôm nay.</p>
+          ) : (
+            safeItems.map((item, index) => {
+              const rawStatus = item?.status ? String(item.status).toUpperCase() : ""
+              // Hỗ trợ bắt cả trạng thái tiếng Anh lẫn tiếng Việt đổ về từ JPA
+              const isCompleted = rawStatus === 'COMPLETED' || rawStatus === 'DONE' || rawStatus === 'FINISHED' || rawStatus.includes("HOÀN")
+              
+              // 🌟 SỬA ĐỒNG BỘ: Kiểm tra linh hoạt cả 2 trường serviceType và service của DTO Backend
+              const rawService = item?.serviceType ? String(item.serviceType).toUpperCase() : (item?.service ? String(item.service).toUpperCase() : "")
+              
+              // Khớp nối an toàn các trường dữ liệu Enum thực tế của Spring Boot
+              const serviceLabel = rawService.includes("PREMIUM") ? "Rửa xe cao cấp" : 
+                                   (rawService.includes("DETAIL") || rawService.includes("FULL")) ? "Chăm sóc toàn diện" : "Rửa xe tiêu chuẩn"
+
+              return (
+                <div
+                  className={cn(
+                    'flex items-center gap-4 rounded-xl border border-slate-100 p-3 transition-all hover:border-primary hover:shadow-xs bg-white',
+                    index === 0 && 'bg-slate-50/50 border-indigo-100/50',
+                  )}
+                  key={index}
+                >
+                  <div className="grid size-12 shrink-0 place-items-center rounded-xl border border-slate-100 bg-slate-50">
+                    <span className="text-[10px] font-bold tracking-tight text-slate-700">{item.time || '00:00'}</span>
+                    <Clock className="text-slate-400 -mt-1" size={12} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-black uppercase tracking-tight text-slate-800">
+                      {String(item.licensePlate || item.plate || 'N/A').toUpperCase()}
+                    </p>
+                    <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                      {serviceLabel}
+                    </p>
+                  </div>
+                  <span className={cn('whitespace-nowrap rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight', isCompleted ? statusClasses.success : statusClasses.warning)}>
+                    {isCompleted ? 'Hoàn tất' : 'Chờ rửa'}
+                  </span>
+                </div>
+              )
+            })
+          )}
         </div>
 
-        <Button className="mt-4 w-full text-on-surface-variant" type="button" variant="outline">
+        <Button className="mt-4 w-full text-slate-500 hover:text-slate-700 font-bold text-xs" type="button" variant="outline">
           Xem tất cả booking
         </Button>
       </CardContent>
@@ -53,32 +78,74 @@ export function QueuePanel() {
   )
 }
 
-export function TierDistributionPanel() {
+// =========================================================================
+// 🌟 2. PANEL BIỂU ĐỒ TRÒN SVG PHÂN HẠNG: Mapping dữ liệu động an toàn
+// =========================================================================
+export function TierDistributionPanel({ stats }: { stats: any }) {
+  const member = stats?.memberCount ?? 0
+  const silver = stats?.silverCount ?? 0
+  const gold = stats?.goldCount ?? 0
+  const platinum = stats?.platinumCount ?? 0
+  const totalVehicles = member + silver + gold + platinum
+
+  const tiers = [
+    { label: 'Member', count: member, percent: totalVehicles > 0 ? (member / totalVehicles) * 100 : 0, colorClass: 'bg-slate-400', color: '#94A3B8' },
+    { label: 'Silver', count: silver, percent: totalVehicles > 0 ? (silver / totalVehicles) * 100 : 0, colorClass: 'bg-blue-500', color: '#3B82F6' },
+    { label: 'Gold', count: gold, percent: totalVehicles > 0 ? (gold / totalVehicles) * 100 : 0, colorClass: 'bg-amber-500', color: '#F59E0B' },
+    { label: 'Platinum', count: platinum, percent: totalVehicles > 0 ? (platinum / totalVehicles) * 100 : 0, colorClass: 'bg-purple-500', color: '#A855F7' },
+  ]
+
+  let accumulatedPercent = 0
+
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm bg-white border border-slate-100 rounded-2xl">
       <CardContent className="p-6">
-        <h3 className="mb-6 text-sm font-medium uppercase leading-4 text-primary">Phân hạng khách hàng</h3>
+        <h3 className="mb-6 text-sm font-bold uppercase tracking-tight text-primary">Phân hạng khách hàng</h3>
 
         <div className="relative mb-6 flex items-center justify-center">
           <svg className="-rotate-90" height="140" viewBox="0 0 42 42" width="140">
-            <circle cx="21" cy="21" fill="transparent" r="15.915" stroke="#D3D1C7" strokeDasharray="40 60" strokeWidth="6" />
-            <circle cx="21" cy="21" fill="transparent" r="15.915" stroke="#B5D4F4" strokeDasharray="25 75" strokeDashoffset="-40" strokeWidth="6" />
-            <circle cx="21" cy="21" fill="transparent" r="15.915" stroke="#FAC775" strokeDasharray="20 80" strokeDashoffset="-65" strokeWidth="6" />
-            <circle cx="21" cy="21" fill="transparent" r="15.915" stroke="#CECBF6" strokeDasharray="15 85" strokeDashoffset="-85" strokeWidth="6" />
+            {tiers.map((tier) => {
+              const percentValue = tier.percent
+              if (percentValue === 0) return null
+
+              const strokeDashArray = `${percentValue} ${100 - percentValue}`
+              const strokeDashOffset = -accumulatedPercent
+              accumulatedPercent += percentValue
+
+              return (
+                <circle 
+                  cx="21" 
+                  cy="21" 
+                  fill="transparent" 
+                  r="15.915" 
+                  stroke={tier.color} 
+                  strokeDasharray={strokeDashArray} 
+                  strokeDashoffset={strokeDashOffset} 
+                  strokeWidth="5" 
+                  strokeLinecap="round"
+                  key={tier.label}
+                  className="transition-all duration-500"
+                />
+              )
+            })}
           </svg>
+          
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xl font-medium leading-7 text-on-surface">1,248</span>
-            <span className="text-[10px] uppercase tracking-wide text-on-surface-variant">Hạng</span>
+            <span className="text-2xl font-black tracking-tight text-slate-800">
+              {totalVehicles.toLocaleString()}
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 -mt-0.5">Khách</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {tierDistribution.map((tier) => (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-2">
+          {tiers.map((tier) => (
             <div className="flex items-center gap-2" key={tier.label}>
-              <span className={cn('size-2.5 rounded-full', tier.colorClass)} />
-              <span className="text-[11px] font-medium uppercase">
-                {tier.label} ({tier.percent})
-              </span>
+              <span className={cn('size-2.5 rounded-full shrink-0', tier.colorClass)} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold text-slate-700 truncate">{tier.label} ({tier.count} xe)</p>
+                <p className="text-[10px] font-medium text-slate-400 mt-0.5">{Math.round(tier.percent)}% tỷ lệ</p>
+              </div>
             </div>
           ))}
         </div>
@@ -88,44 +155,18 @@ export function TierDistributionPanel() {
 }
 
 export function AdminActionCards() {
-  const AlertIcon = inventoryAlert.icon
-
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <div className="relative overflow-hidden rounded-xl bg-primary p-6 text-primary-foreground">
-        <div className="relative z-10">
-          <h4 className="mb-2 text-xl font-medium leading-7">Nâng cấp gói Diamond</h4>
-          <p className="mb-6 text-sm leading-5 text-white/80">
-            Ưu đãi 15% cho khách hàng Silver nâng cấp lên Platinum trong tuần này.
-          </p>
-          <Button className="bg-surface px-6 text-primary hover:bg-surface-container-low" type="button">
-            Gửi thông báo
-          </Button>
-        </div>
-        <Sparkles className="absolute -bottom-8 -right-8 text-white/10" size={120} />
+    <div className="relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-sm">
+      <div className="relative z-10">
+        <h4 className="mb-2 text-base font-bold tracking-tight">Nâng cấp gói Diamond</h4>
+        <p className="mb-6 text-xs leading-relaxed text-white/80 font-medium">
+          Ưu đãi 15% cho khách hàng Silver nâng cấp lên Platinum trong tuần này.
+        </p>
+        <Button className="bg-white px-5 rounded-xl text-primary hover:bg-slate-50 text-xs font-bold shadow-md" type="button">
+          Gửi thông báo
+        </Button>
       </div>
-
-      <Card className="shadow-sm">
-        <CardContent className="flex h-full flex-col justify-between p-6">
-          <div>
-            <h4 className="mb-2 text-sm font-medium uppercase leading-4 tracking-widest text-on-surface-variant">
-              Cảnh báo tồn kho
-            </h4>
-            <div className="flex items-center gap-4">
-              <span className="grid size-14 place-items-center rounded-full bg-danger/10 text-danger">
-                <AlertIcon size={26} />
-              </span>
-              <div>
-                <p className="text-base font-medium leading-6 text-on-surface">{inventoryAlert.title}</p>
-                <p className="text-xs leading-4 text-danger">{inventoryAlert.subtitle}</p>
-              </div>
-            </div>
-          </div>
-          <a className="mt-4 inline-flex items-center gap-2 text-xs font-medium leading-4 text-primary hover:underline" href="#inventory">
-            Xem chi tiết <ArrowRight size={14} />
-          </a>
-        </CardContent>
-      </Card>
+      <Sparkles className="absolute -bottom-8 -right-8 text-white/10" size={120} />
     </div>
   )
 }

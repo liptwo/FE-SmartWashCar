@@ -7,6 +7,7 @@ export const routes = {
   adminConfiguration: '/admin/configuration',
   adminPromotions: '/admin/promotions',
   adminReports: '/admin/reports',
+  adminServices: '/admin/services',
   dashboard: '/dashboard',
   profile: '/profile',
   vehicles: '/vehicles',
@@ -14,12 +15,14 @@ export const routes = {
   history: '/history',
   loyalty: '/loyalty',
   promotions: '/promotions',
+  notifications: '/notifications',
   articles: '/articles',
   adminArticles: '/admin/articles',
   test: '/test',
   login: '/login',
   register: '/register',
   otp: '/otp',
+  contact: '/lien-he',
 } as const
 
 export type AppPath = (typeof routes)[keyof typeof routes]

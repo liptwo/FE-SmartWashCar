@@ -31,7 +31,7 @@ export function UpcomingAppointment() {
   }
 
   return (
-    <section className="col-span-12">
+    <section className="col-span-12" data-tour="upcoming-appointment">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-xl font-medium leading-7 text-on-surface">Lịch hẹn sắp tới</h3>
         <Link className="text-sm font-medium leading-4 text-primary hover:underline" to={routes.history}>
@@ -57,7 +57,9 @@ export function UpcomingAppointment() {
                   {latestBooking.vehicleDetails?.licensePlate || latestBooking.licensePlate || 'Chưa rõ xe'}
                 </p>
                 <p className="text-base leading-6 text-on-surface-variant">
-                  {latestBooking.serviceType} {latestBooking.notes ? `• ${latestBooking.notes}` : ''}
+                  {((latestBooking as any).selectedServices && (latestBooking as any).selectedServices.length > 0
+                    ? (latestBooking as any).selectedServices.map((s: any) => s.name || s.serviceName).join(', ')
+                    : (latestBooking.serviceType || 'Chưa chọn'))} {latestBooking.notes ? `• ${latestBooking.notes}` : ''}
                 </p>
               </div>
             </div>

@@ -11,6 +11,7 @@ import {
 } from 'react'
 import { AdminCustomerPage } from '@/features/admin/pages/admin-customer-page'
 import { AdminRewardsPage } from '@/features/admin/pages/admin-rewards-page'
+import { AdminServicesPage } from '@/features/admin/pages/admin-services-page'
 import { MainLayout } from '@/shared/components/layout/main-layout'
 import { AdminConfigurationPage } from '@/features/admin/pages/admin-configuration-page'
 import { AdminDashboardPage } from '@/features/admin/pages/admin-dashboard-page'
@@ -24,8 +25,10 @@ import { ClientProfilePage } from '@/features/client/pages/client-profile-page'
 import { ClientVehiclesPage } from '@/features/client/pages/client-vehicles-page'
 import { ClientHistoryPage } from '@/features/client/pages/client-history-page'
 import { ClientArticlesPage } from '@/features/client/pages/client-articles-page'
+import { ClientNotificationsPage } from '@/features/client/pages/client-notifications-page'
 import { AdminArticlesPage } from '@/features/admin/pages/admin-articles-page'
 import { HomePage } from '@/features/marketing/pages/home-page'
+import { ContactPage } from '@/features/marketing/pages/contact-page'
 import { LoyaltyPage } from '@/features/client/pages/loyalty-page'
 import ClientPromotionsPage from '@/features/client/pages/client-promotions-page'
 import { OtpPage } from '@/features/auth/pages/otp-page'
@@ -41,6 +44,7 @@ const protectedRoutes: AppPath[] = [
   routes.history,
   routes.loyalty,
   routes.promotions,
+  routes.notifications,
   routes.articles,
   routes.adminArticles,
   routes.admin,
@@ -50,6 +54,19 @@ const protectedRoutes: AppPath[] = [
   routes.adminPromotions,
   routes.adminReports,
   routes.adminConfiguration,
+  routes.adminServices,
+]
+
+const adminRoutes: AppPath[] = [
+  routes.admin,
+  routes.adminBookings,
+  routes.customer,
+  routes.rewards,
+  routes.adminConfiguration,
+  routes.adminPromotions,
+  routes.adminReports,
+  routes.adminArticles,
+  routes.adminServices,
 ]
 
 function Navigate({ to }: { to: AppPath }) {
@@ -98,15 +115,24 @@ export function AppRouter() {
     [path]
   )
 
+  const user = authStore.getUser()
+  const isAdmin = user?.role === 'ADMIN'
+
+  // Block client users from accessing admin pages
+  const isAuthorized = !adminRoutes.includes(path) || isAdmin
+
   return (
     <RouterContext.Provider value={value}>
-      {path === routes.dashboard ||
+      {!isAuthorized ? (
+        <Navigate to={routes.dashboard} />
+      ) : path === routes.dashboard ||
       path === routes.profile ||
       path === routes.vehicles ||
       path === routes.booking ||
       path === routes.history ||
       path === routes.loyalty ||
       path === routes.promotions ||
+      path === routes.notifications ||
       path === routes.articles ||
       path === routes.adminArticles ||
       path === routes.admin ||
@@ -115,7 +141,8 @@ export function AppRouter() {
       path === routes.rewards ||
       path === routes.adminPromotions ||
       path === routes.adminReports ||
-      path === routes.adminConfiguration ? (
+      path === routes.adminConfiguration ||
+      path === routes.adminServices ? (
         renderRoute(path)
       ) : (
         <MainLayout>{renderRoute(path)}</MainLayout>
@@ -125,17 +152,27 @@ export function AppRouter() {
 }
 
 function renderRoute(path: AppPath) {
+  const user = authStore.getUser()
+  const isAdmin = user?.role === 'ADMIN'
+
   if (protectedRoutes.includes(path) && !authStore.isAuthenticated()) {
     return <Navigate to={routes.login} />
   }
 
-  if ((path === routes.login || path === routes.register) && authStore.isAuthenticated()) {
+  // Redirect clients to dashboard, admins to admin dashboard
+  if (adminRoutes.includes(path) && !isAdmin) {
     return <Navigate to={routes.dashboard} />
+  }
+
+  if ((path === routes.login || path === routes.register) && authStore.isAuthenticated()) {
+    return <Navigate to={isAdmin ? routes.admin : routes.dashboard} />
   }
 
   switch (path) {
     case routes.adminConfiguration:
       return <AdminConfigurationPage />
+    case routes.adminServices:
+      return <AdminServicesPage />
     case routes.adminPromotions:
       return <AdminPromotionsPage />
     case routes.adminReports:
@@ -158,6 +195,8 @@ function renderRoute(path: AppPath) {
       return <AdminArticlesPage />
     case routes.promotions:
       return <ClientPromotionsPage />
+    case routes.notifications:
+      return <ClientNotificationsPage />
     case routes.dashboard:
       return <ClientDashboardPage />
     case routes.history:
@@ -174,6 +213,8 @@ function renderRoute(path: AppPath) {
       return <AuthPage mode='register' />
     case routes.otp:
       return <OtpPage />
+    case routes.contact:
+      return <ContactPage />
     case routes.home:
     default:
       return <HomePage />
