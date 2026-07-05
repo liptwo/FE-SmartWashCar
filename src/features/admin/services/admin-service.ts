@@ -45,6 +45,10 @@ export interface AdminBooking {
   vehicle?: any
   vehicleType?: string
   selectedServices?: any[]
+  discountAmount?: number
+  pointsDiscountAmount?: number
+  usedPoints?: number
+  promoName?: string
 }
 
 export interface AdminVehicle {
@@ -270,6 +274,10 @@ function normalizeBooking(booking: any): AdminBooking {
     vehicle: booking.vehicle,
     vehicleType: booking.vehicleType || booking.vehicle?.vehicleType || 'CAR',
     selectedServices: booking.selectedServices ?? booking.selected_services ?? [],
+    discountAmount: booking.discountAmount ?? booking.discount_amount ?? 0,
+    pointsDiscountAmount: booking.pointsDiscountAmount ?? booking.points_discount_amount ?? 0,
+    usedPoints: booking.usedPoints ?? booking.used_points ?? 0,
+    promoName: booking.promoName ?? booking.promo_name ?? '',
   }
 }
 

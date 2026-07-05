@@ -19,6 +19,11 @@ export interface Booking {
   customer?: { customerId: string; fullName: string; phone: string; tier: string };
   vehicle?: { vehicleId: string; licensePlate: string; vehicleType: string; brand: string };
   selectedServices?: { serviceId: string; serviceName: string; quantity: number; unitPrice: number; duration: number; subtotal: number }[];
+  discountAmount?: number;
+  promotionCode?: string;
+  usedPoints?: number;
+  promoName?: string;
+  pointsDiscountAmount?: number;
   totalAmount?: number;
 }
 
@@ -453,12 +458,41 @@ export function AdminBookingsPage() {
                               : activeBooking.serviceType}
                           </span>
                         </div>
+                        {/* Tạm tính nếu có chiết khấu */}
+                        {((activeBooking.discountAmount && activeBooking.discountAmount > 0) || (activeBooking.usedPoints && activeBooking.usedPoints > 0)) && (
+                          <div className='flex justify-between items-center py-1.5 border-b border-dashed border-slate-100'>
+                            <span className='text-slate-450 font-bold uppercase text-[10px]'>Tạm tính</span>
+                            <span className='font-bold text-slate-700'>
+                              {formatCurrency(
+                                activeBooking.selectedServices && activeBooking.selectedServices.length > 0
+                                  ? activeBooking.selectedServices.reduce((acc, s) => acc + (s.unitPrice || 0), 0)
+                                  : activeBooking.basePrice
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {/* Chiết khấu Promo Voucher */}
+                        {activeBooking.discountAmount && activeBooking.discountAmount > 0 ? (
+                          <div className='flex justify-between items-center py-1.5 border-b border-dashed border-slate-100 text-emerald-600'>
+                            <span className='font-bold uppercase text-[10px]'>Khuyến mãi {activeBooking.promoName ? `(${activeBooking.promoName})` : ''}</span>
+                            <span className='font-bold'>-{formatCurrency(activeBooking.discountAmount)}</span>
+                          </div>
+                        ) : null}
+                        {/* Chiết khấu Khấu trừ điểm tích lũy */}
+                        {activeBooking.usedPoints && activeBooking.usedPoints > 0 ? (
+                          <div className='flex justify-between items-center py-1.5 border-b border-dashed border-slate-100 text-emerald-600'>
+                            <span className='font-bold uppercase text-[10px]'>Khấu trừ điểm ({activeBooking.usedPoints} pts)</span>
+                            <span className='font-bold'>-{formatCurrency(activeBooking.pointsDiscountAmount || (activeBooking.usedPoints * 100))}</span>
+                          </div>
+                        ) : null}
                         <div className='flex justify-between items-center py-1.5 border-b border-dashed border-slate-100'>
-                          <span className='text-slate-450 font-bold uppercase text-[10px]'>Giá trị hóa đơn</span>
-                          <span className='font-bold text-emerald-600'>
-                            {activeBooking.totalAmount 
-                              ? activeBooking.totalAmount.toLocaleString() 
-                              : (activeBooking.basePrice ? activeBooking.basePrice.toLocaleString() : '0')} VND
+                          <span className='text-slate-450 font-bold uppercase text-[10px]'>Thực tế thanh toán</span>
+                          <span className='font-bold text-emerald-600 text-sm'>
+                            {formatCurrency(
+                              activeBooking.totalAmount !== undefined 
+                                ? activeBooking.totalAmount 
+                                : activeBooking.basePrice
+                            )}
                           </span>
                         </div>
                       </div>

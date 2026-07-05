@@ -24,6 +24,11 @@ export interface BookingResponse {
   status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
   branchName?: string
   amount?: number
+  promoId?: string
+  promoName?: string
+  discountAmount?: number
+  usedPoints?: number
+  pointsDiscountAmount?: number
 }
 
 export interface AvailabilitySlotResponse {

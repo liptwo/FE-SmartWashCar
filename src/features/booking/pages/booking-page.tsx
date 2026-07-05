@@ -22,7 +22,7 @@ import { formatCurrency, cn } from '@/shared/lib/utils'
 import { ClientSidebar } from '@/features/client/components/client-sidebar'
 import { ClientTopbar } from '@/features/client/components/client-topbar'
 import type { AppDispatch, RootState } from '@/app/store'
-import { fetchBookings, fetchVehicles } from '@/features/client/store/client-slice'
+import { fetchBookings, fetchVehicles, fetchLoyaltyBalance } from '@/features/client/store/client-slice'
 import { vehicleService } from '@/features/client/services/vehicle-service'
 import { bookingService } from '@/features/booking/services/booking-service'
 import { promotionService } from '@/features/client/services/promotion-service'
@@ -33,7 +33,9 @@ interface BookingPageProps {
 
 export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   const dispatch = useDispatch<AppDispatch>()
+  const user = useSelector((state: RootState) => state.auth.user)
   const apiVehicles = useSelector((state: RootState) => state.client.vehicles.items)
+  const clientBookings = useSelector((state: RootState) => state.client.bookings.items)
   const { tier, balance } = useSelector((state: RootState) => state.client.loyalty)
 
   // Generate next 7 days dynamically starting from today
@@ -92,9 +94,10 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   const [newPlate, setNewPlate] = useState('')
   const [newModel, setNewModel] = useState('')
 
-  // Load vehicles on mount
+  // Load vehicles and bookings on mount
   useEffect(() => {
     dispatch(fetchVehicles())
+    dispatch(fetchBookings())
   }, [dispatch])
 
   // Load db services and promotions on mount
@@ -189,6 +192,16 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   const pointsEarned = useMemo(() => {
     return Math.floor(finalAmount / 5000)
   }, [finalAmount])
+
+  // Lọc danh sách ID khuyến mãi khách hàng này đã sử dụng
+  const usedPromoIds = useMemo(() => {
+    console.log("DEBUG: clientBookings = ", clientBookings)
+    const filtered = clientBookings
+      .filter((b) => b.status !== 'CANCELLED' && b.promoId)
+      .map((b) => b.promoId as string)
+    console.log("DEBUG: usedPromoIds = ", filtered)
+    return filtered
+  }, [clientBookings])
 
   // Select default vehicle when list is loaded
   useEffect(() => {
@@ -403,12 +416,28 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
         usedPoints: pointsToUse
       })
       toast.success('Đặt lịch thành công')
-      setUsePoints(false) // Reset state đổi điểm
+      
+      // Đồng bộ lại số điểm của khách hàng sau khi trừ
+      if (user?.id) {
+        dispatch(fetchLoyaltyBalance(user.id))
+      }
+      
       dispatch(fetchBookings())
       onBookingSuccess(result)
       setIsSuccessModalOpen(true)
     } catch {
       toast.error('Đặt lịch thất bại. Vui lòng thử lại sau.')
+    }
+  }
+
+  const handleCloseSuccessModal = () => {
+    setIsSuccessModalOpen(false)
+    setUsePoints(false) // Reset state đổi điểm khi đóng pop up thành công
+    setSelectedPromo(null)
+    setCustomerNotes('')
+    setSelectedTimeSlot('')
+    if (dbServices.length > 0) {
+      setSelectedServicesList([dbServices[0]])
     }
   }
 
@@ -827,23 +856,37 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                           if (name === 'silver') return 2
                           return 1
                         }
-                        const getTierRankFromTiers = (targetTiers: string) => {
-                          const tiers = (targetTiers || '').toUpperCase()
-                          if (tiers.includes('PLATINUM')) return 4
-                          if (tiers.includes('GOLD')) return 3
-                          if (tiers.includes('SILVER')) return 2
-                          return 1
+                        const targetTiersList = (promo.targetTiers || '')
+                          .toUpperCase()
+                          .split(',')
+                          .map((t: string) => t.trim())
+                        
+                        let minRequiredRank = 4
+                        if (targetTiersList.length > 0) {
+                          targetTiersList.forEach((t: string) => {
+                            const r = getTierRank(t)
+                            if (r < minRequiredRank) {
+                              minRequiredRank = r
+                            }
+                          })
+                        } else {
+                          minRequiredRank = 1
                         }
-                        const promoRank = getTierRankFromTiers(promo.targetTiers)
+
                         const userRank = getTierRank(tier)
-                        const isEligible = userRank >= promoRank
+                        const isEligible = userRank >= minRequiredRank
 
                         const isSelected = selectedPromo?.promoId === promo.promoId
+                        const isAlreadyUsed = usedPromoIds.includes(promo.promoId)
 
                         return (
                           <div
                             key={promo.promoId}
                             onClick={() => {
+                              if (isAlreadyUsed) {
+                                toast.error('Bạn đã sử dụng mã khuyến mãi này rồi')
+                                return
+                              }
                               if (!isEligible) {
                                 toast.error(`Mã này yêu cầu hạng ${promo.targetTiers}`)
                                 return
@@ -860,9 +903,11 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                               'p-3.5 rounded-xl border flex flex-col justify-between transition-all relative overflow-hidden select-none cursor-pointer',
                               isSelected
                                 ? 'border-emerald-600 bg-emerald-50/10'
-                                : isEligible
-                                  ? 'border-slate-200 bg-white hover:border-indigo-500'
-                                  : 'border-slate-150 bg-slate-50 opacity-60 cursor-not-allowed'
+                                : isAlreadyUsed
+                                  ? 'border-slate-150 bg-slate-100 opacity-55 cursor-not-allowed'
+                                  : isEligible
+                                    ? 'border-slate-200 bg-white hover:border-indigo-500'
+                                    : 'border-slate-150 bg-slate-50 opacity-60 cursor-not-allowed'
                             )}
                           >
                             <div className='flex justify-between items-start gap-2'>
@@ -887,12 +932,18 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                             </div>
                             
                             <div className='mt-2.5 pt-2 border-t border-slate-100 flex justify-between items-center text-[9px] font-bold text-slate-500'>
-                              <span className={cn(
-                                'px-1.5 py-0.5 rounded-md uppercase tracking-wider',
-                                isEligible ? 'bg-indigo-50 text-indigo-750' : 'bg-slate-200 text-slate-500'
-                              )}>
-                                {promo.targetTiers}
-                              </span>
+                              {isAlreadyUsed ? (
+                                <span className='px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-600 uppercase tracking-wider'>
+                                  Đã dùng
+                                </span>
+                              ) : (
+                                <span className={cn(
+                                  'px-1.5 py-0.5 rounded-md uppercase tracking-wider',
+                                  isEligible ? 'bg-indigo-50 text-indigo-750' : 'bg-slate-200 text-slate-500'
+                                )}>
+                                  {promo.targetTiers}
+                                </span>
+                              )}
                               <span className='text-emerald-600'>
                                 {promo.value <= 100 
                                   ? `Giảm ${promo.value}%${promo.maxDiscount ? ` (tối đa ${formatCurrency(promo.maxDiscount)})` : ''}` 
@@ -1145,7 +1196,7 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                   </div>
 
                   <button
-                    onClick={() => setIsSuccessModalOpen(false)}
+                    onClick={handleCloseSuccessModal}
                     className='w-full py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 cursor-pointer'
                   >
                     Tuyệt vời, tôi đã hiểu
