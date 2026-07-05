@@ -9,6 +9,15 @@ export interface PointBalanceResponse {
   tier?: string // e.g. "Silver", "Gold", "Platinum"
   nextTierPoints?: number // points needed to advance to next tier
   nextTier?: string // e.g. "Gold", "Platinum"
+  totalVisits?: number
+  remainingVisits?: number
+  silverThreshold?: number
+  goldThreshold?: number
+  platinumThreshold?: number
+  redeemPointsFor10k?: number
+  redeemPointsFreeBasic?: number
+  redeemPointsFreePremium?: number
+  redeemPointsAddon?: number
 }
 
 export interface PointHistoryResponse {
