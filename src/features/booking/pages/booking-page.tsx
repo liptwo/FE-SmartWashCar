@@ -142,7 +142,7 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
   const discountAmount = useMemo(() => {
     if (!selectedPromo) return 0
     const val = selectedPromo.value || 0
-    if (val <= 100) {
+    if (val < 100) {
       let calc = Math.round(totalAmount * (val / 100))
       if (selectedPromo.maxDiscount && calc > selectedPromo.maxDiscount) {
         calc = selectedPromo.maxDiscount
@@ -945,7 +945,7 @@ export function BookingPage({ onBookingSuccess }: BookingPageProps) {
                                 </span>
                               )}
                               <span className='text-emerald-600'>
-                                {promo.value <= 100 
+                                {promo.value < 100 
                                   ? `Giảm ${promo.value}%${promo.maxDiscount ? ` (tối đa ${formatCurrency(promo.maxDiscount)})` : ''}` 
                                   : `Giảm ${formatCurrency(promo.value)}`
                                 }

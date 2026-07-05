@@ -14,10 +14,6 @@ interface ClientState {
     silverThreshold: number
     goldThreshold: number
     platinumThreshold: number
-    redeemPointsFor10k: number
-    redeemPointsFreeBasic: number
-    redeemPointsFreePremium: number
-    redeemPointsAddon: number
     isLoading: boolean
     error: string | null
   }
@@ -43,10 +39,6 @@ const initialState: ClientState = {
     silverThreshold: 10,
     goldThreshold: 25,
     platinumThreshold: 50,
-    redeemPointsFor10k: 100,
-    redeemPointsFreeBasic: 300,
-    redeemPointsFreePremium: 600,
-    redeemPointsAddon: 150,
     isLoading: false,
     error: null,
   },
@@ -125,10 +117,6 @@ const clientSlice = createSlice({
         state.loyalty.silverThreshold = action.payload.silverThreshold ?? 10
         state.loyalty.goldThreshold = action.payload.goldThreshold ?? 25
         state.loyalty.platinumThreshold = action.payload.platinumThreshold ?? 50
-        state.loyalty.redeemPointsFor10k = action.payload.redeemPointsFor10k ?? 100
-        state.loyalty.redeemPointsFreeBasic = action.payload.redeemPointsFreeBasic ?? 300
-        state.loyalty.redeemPointsFreePremium = action.payload.redeemPointsFreePremium ?? 600
-        state.loyalty.redeemPointsAddon = action.payload.redeemPointsAddon ?? 150
       })
       .addCase(fetchLoyaltyBalance.rejected, (state, action) => {
         state.loyalty.isLoading = false

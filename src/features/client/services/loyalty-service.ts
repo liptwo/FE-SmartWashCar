@@ -14,10 +14,6 @@ export interface PointBalanceResponse {
   silverThreshold?: number
   goldThreshold?: number
   platinumThreshold?: number
-  redeemPointsFor10k?: number
-  redeemPointsFreeBasic?: number
-  redeemPointsFreePremium?: number
-  redeemPointsAddon?: number
 }
 
 export interface PointHistoryResponse {
@@ -33,23 +29,19 @@ export interface PointHistoryResponse {
 
 export interface Page<T> {
   content: T[]
-  totalPages: number
-  totalElements: number
-  size: number
-  number: number
 }
 
 export interface RedeemPointsRequest {
   customerId: string
-  redeemType: string
+  points: number
   referenceId: string
 }
 
 export interface RedeemPointsResponse {
   customerId: string
-  pointsRedeemed: number
-  newBalance: number
-  rewardDetails?: string
+  pointsUsed: number
+  remainingBalance: number
+  message?: string
 }
 
 export const loyaltyService = {
