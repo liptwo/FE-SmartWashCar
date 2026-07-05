@@ -91,7 +91,7 @@ export function UpcomingAppointment() {
               <p className="text-base font-medium text-on-surface">Bạn chưa có lịch hẹn sắp tới</p>
               <p className="text-sm text-on-surface-variant">Đăng ký lịch rửa xe để nhận dịch vụ chăm sóc tốt nhất</p>
             </div>
-            <Link to={routes.booking} className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-on-primary transition-shadow hover:shadow-md">
+            <Link to={routes.booking} className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white transition-shadow hover:shadow-md">
               Đặt lịch ngay
             </Link>
           </CardContent>

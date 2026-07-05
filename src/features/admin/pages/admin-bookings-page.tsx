@@ -252,7 +252,7 @@ export function AdminBookingsPage() {
         onSearchChange={setSearchText}
         actions={
           <Button
-            className="h-10 gap-2 px-4 bg-primary text-on-primary hover:opacity-90 select-none cursor-pointer"
+            className="h-10 gap-2 px-4 bg-primary text-white hover:opacity-90 select-none cursor-pointer"
             type="button"
             onClick={handleOpenNewBookingModal}
           >

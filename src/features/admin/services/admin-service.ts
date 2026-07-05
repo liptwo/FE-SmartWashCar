@@ -428,6 +428,11 @@ export const adminService = {
     return data
   },
 
+  async getDashboardStats(): Promise<any> {
+    const { data } = await authorizeAxios.get('/admin/dashboard/stats')
+    return data
+  },
+
   async getAdminServices(): Promise<any[]> {
     const { data } = await authorizeAxios.get('/admin/services')
     return data

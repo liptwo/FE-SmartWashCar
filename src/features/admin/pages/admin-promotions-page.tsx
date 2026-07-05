@@ -7,6 +7,7 @@ import { PromotionStats } from '@/features/admin/components/promotion-stats'
 import { PromotionTable } from '@/features/admin/components/promotion-table'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
+import { authorizeAxios } from '@/shared/lib/api-client'
 
 const filterTabs = ['Tất cả', 'Đang chạy', 'Hết hạn']
 
@@ -30,85 +31,72 @@ export function AdminPromotionsPage() {
   const fetchPromotions = async () => {
     setLoading(true)
     try {
-      // Thiết lập URL động cấu trúc SearchParams mượt mà
-      const url = new URL('http://localhost:8080/api/admin/promotions')
-      
+      const params: any = {}
       const statusMap = ['ALL', 'ACTIVE', 'EXPIRED']
       const paramStatus = statusMap[activeTab]
       
       if (paramStatus && paramStatus !== 'ALL') {
-        url.searchParams.append('status', paramStatus)
+        params.status = paramStatus
       }
 
       // 🌟 THÊM: Nếu có từ khóa gõ trên Topbar, truyền trực tiếp params search xuống database
       if (searchQuery.trim() !== '') {
-        url.searchParams.append('search', searchQuery.trim())
+        params.search = searchQuery.trim()
       }
 
-      const token = localStorage.getItem('jwt_token')
+      const res = await authorizeAxios.get('/admin/promotions', { params })
+      const data = res.data
+      
+      const mappedData = data.map((item: any) => {
+        let finalTiers: string[] = []
+        if (Array.isArray(item.targetTiers)) {
+          finalTiers = item.targetTiers
+        } else if (typeof item.targetTiers === 'string' && item.targetTiers.trim() !== '') {
+          finalTiers = item.targetTiers.includes(',')
+            ? item.targetTiers.split(',').map((t: string) => t.trim())
+            : [item.targetTiers.trim()]
+        } else {
+          finalTiers = ['ALL']
+        }
 
-      const res = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+        const currentCount = item.usageCount !== undefined ? item.usageCount : 0
+        const limitCount = item.usageLimit !== undefined ? item.usageLimit : 100
+        
+        const isPromoActive = 
+          item.active === true || 
+          String(item.active) === 'true' || 
+          item.isActive === true || 
+          String(item.isActive) === 'true'
+
+        return {
+          ...item,
+          id: item.promoId || item.promoid || item.id || `PROMO-${item.name}`,
+          targetTiers: finalTiers,
+          isActive: isPromoActive,
+          status: isPromoActive ? 'ACTIVE' : 'EXPIRED',
+          type: item.promoType || item.type || 'DISCOUNT',
+          usage: {
+            current: currentCount,
+            limit: limitCount
+          },
+          usageLimit: limitCount,
+          usageCount: currentCount,
+          createdAt: item.createdAt || new Date().toISOString()
         }
       })
-      
-      if (res.ok) {
-        const data = await res.json()
-        
-        const mappedData = data.map((item: any) => {
-          let finalTiers: string[] = []
-          if (Array.isArray(item.targetTiers)) {
-            finalTiers = item.targetTiers
-          } else if (typeof item.targetTiers === 'string' && item.targetTiers.trim() !== '') {
-            finalTiers = item.targetTiers.includes(',')
-              ? item.targetTiers.split(',').map((t: string) => t.trim())
-              : [item.targetTiers.trim()]
-          } else {
-            finalTiers = ['ALL']
-          }
 
-          const currentCount = item.usageCount !== undefined ? item.usageCount : 0
-          const limitCount = item.usageLimit !== undefined ? item.usageLimit : 100
-          
-          const isPromoActive = 
-            item.active === true || 
-            String(item.active) === 'true' || 
-            item.isActive === true || 
-            String(item.isActive) === 'true'
+      // SẮP XẾP DANH SÁCH THEO THỜI GIAN TẠO MỚI NHẤT LÊN ĐẦU
+      const sortedData = mappedData.sort((a: any, b: any) => {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      })
 
-          return {
-            ...item,
-            id: item.promoId || item.promoid || item.id || `PROMO-${item.name}`,
-            targetTiers: finalTiers,
-            isActive: isPromoActive,
-            status: isPromoActive ? 'ACTIVE' : 'EXPIRED',
-            type: item.promoType || item.type || 'DISCOUNT',
-            usage: {
-              current: currentCount,
-              limit: limitCount
-            },
-            usageLimit: limitCount,
-            usageCount: currentCount,
-            createdAt: item.createdAt || new Date().toISOString()
-          }
-        })
+      // GỘP TRÙNG THEO TÊN THÔNG MINH BẢO VỆ DỮ LIỆU MỚI NHẤT
+      const uniqueData = sortedData.filter(
+        (value: any, index: number, self: any[]) =>
+          self.findIndex((t: any) => t.name === value.name) === index
+      )
 
-        // SẮP XẾP DANH SÁCH THEO THỜI GIAN TẠO MỚI NHẤT LÊN ĐẦU
-        const sortedData = mappedData.sort((a: any, b: any) => {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        })
-
-        // GỘP TRÙNG THEO TÊN THÔNG MINH BẢO VỆ DỮ LIỆU MỚI NHẤT
-        const uniqueData = sortedData.filter(
-          (value: any, index: number, self: any[]) =>
-            self.findIndex((t: any) => t.name === value.name) === index
-        )
-
-        setPromotions(uniqueData)
-      }
+      setPromotions(uniqueData)
     } catch (error) {
       console.error('Lỗi khi fetch danh sách khuyến mãi:', error)
     } finally {
@@ -118,9 +106,6 @@ export function AdminPromotionsPage() {
 
   // XỬ LÝ LẬT TRẠNG THÁI TOGGLE SWITCH (OPTIMISTIC UPDATE)
   const handleToggleStatus = async (id: string) => {
-    const token = localStorage.getItem('jwt_token')
-    console.log("=== TOKEN ĐANG GỬI ĐI LÀ ===", token)
-
     setPromotions((prevPromotions) =>
       prevPromotions.map((promo) =>
         promo.id === id
@@ -135,29 +120,11 @@ export function AdminPromotionsPage() {
     )
 
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      const res = await fetch(`http://localhost:8080/api/admin/promotions/${id}/toggle`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        },
-      })
-
-      if (!res.ok) {
-        const errText = await res.text()
-        alert(`Lỗi đổi trạng thái từ hệ thống: ${errText}`)
-        fetchPromotions() 
-      }
-    } catch (error) {
+      await authorizeAxios.patch(`/admin/promotions/${id}/toggle`)
+    } catch (error: any) {
       console.error('Lỗi kết nối gạt switch trạng thái:', error)
-      alert('Không thể kết nối đến máy chủ Backend. Đang khôi phục giao diện...')
+      const errMsg = error?.response?.data?.message || error?.message || 'Không thể kết nối đến máy chủ Backend.'
+      alert(`${errMsg} Đang khôi phục giao diện...`)
       fetchPromotions()
     }
   }

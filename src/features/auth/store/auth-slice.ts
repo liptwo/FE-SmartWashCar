@@ -3,10 +3,6 @@ import type { PayloadAction } from '@reduxjs/toolkit'
 
 import { authStore } from './auth-store'
 
-const TOKEN_KEY = 'jwt_token'
-const REFRESH_TOKEN_KEY = 'refresh_token'
-const USER_KEY = 'auth_user'
-
 export interface User {
   id?: string
   name?: string
@@ -26,11 +22,11 @@ interface AuthState {
 }
 
 const getInitialToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY)
+  return authStore.getToken()
 }
 
 const getInitialRefreshToken = (): string | null => {
-  return localStorage.getItem(REFRESH_TOKEN_KEY)
+  return authStore.getRefreshToken()
 }
 
 const getInitialUser = (): User | null => {
@@ -61,15 +57,15 @@ const authSlice = createSlice({
       state.isAuthenticated = true
       state.error = null
 
-      localStorage.setItem(TOKEN_KEY, action.payload.token)
+      authStore.saveToken(action.payload.token)
       if (action.payload.refreshToken) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, action.payload.refreshToken)
+        authStore.saveRefreshToken(action.payload.refreshToken)
       }
       
       const user = action.payload.user || null
       state.user = user
       if (user) {
-        localStorage.setItem(USER_KEY, JSON.stringify(user))
+        authStore.saveUser(user)
       }
     },
     registerSuccess(state) {
@@ -88,16 +84,16 @@ const authSlice = createSlice({
       state.isLoading = false
       state.error = null
 
-      localStorage.removeItem(TOKEN_KEY)
-      localStorage.removeItem(REFRESH_TOKEN_KEY)
-      localStorage.removeItem(USER_KEY)
+      authStore.clear()
     },
     updateUser(state, action: PayloadAction<User>) {
       state.user = {
         ...state.user,
         ...action.payload,
       }
-      localStorage.setItem(USER_KEY, JSON.stringify(state.user))
+      if (state.user) {
+        authStore.saveUser(state.user)
+      }
     },
     clearError(state) {
       state.error = null

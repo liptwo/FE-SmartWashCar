@@ -178,7 +178,7 @@ export function AdminServicesPage() {
         actions={
           <button
             onClick={handleOpenCreateModal}
-            className='h-10 px-4 bg-primary text-on-primary rounded-xl font-semibold hover:opacity-90 transition-all flex items-center gap-1.5 shadow-lg select-none cursor-pointer'
+            className='h-10 px-4 bg-primary text-white rounded-xl font-semibold hover:opacity-90 transition-all flex items-center gap-1.5 shadow-lg select-none cursor-pointer'
           >
             <Plus size={16} />
             Thêm mới

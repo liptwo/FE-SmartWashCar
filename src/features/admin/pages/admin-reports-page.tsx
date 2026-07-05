@@ -70,52 +70,51 @@ export function AdminReportsPage() {
       }
 
       // 3. Fallback to stats API if the custom report APIs fail or are partially loaded
-      const token = localStorage.getItem('jwt_token')
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (token) headers['Authorization'] = `Bearer ${token}`
-      const statsRes = await fetch('http://localhost:8080/api/admin/dashboard/stats', { headers })
-      if (statsRes.ok) {
-        const statsData = await statsRes.json()
+      try {
+        const statsData = await adminService.getDashboardStats()
+        if (statsData) {
+          // Build fallback revenue report from statsData
+          if (!revData) {
+            setRevenueReport({
+              totalRevenue: statsData.todayRevenue * 15 || 45000000,
+              avgRevenuePerDay: statsData.todayRevenue || 3000000,
+              totalWashes: statsData.totalWashCount * 12 || 120,
+              avgRevenuePerWash: statsData.totalWashCount > 0 ? Math.round(statsData.todayRevenue / statsData.totalWashCount) : 250000,
+              washBreakdown: {
+                motorbike: statsData.motorbikeCount * 12 || 70,
+                car: statsData.carCount * 12 || 50
+              },
+              serviceRevenueBreakdown: {
+                basicWashPercent: 40,
+                premiumWashPercent: 35,
+                fullDetailPercent: 25
+              },
+              chartData: statsData.revenue7Days || []
+            })
+          }
 
-        // Build fallback revenue report from statsData
-        if (!revData) {
-          setRevenueReport({
-            totalRevenue: statsData.todayRevenue * 15 || 45000000,
-            avgRevenuePerDay: statsData.todayRevenue || 3000000,
-            totalWashes: statsData.totalWashCount * 12 || 120,
-            avgRevenuePerWash: statsData.totalWashCount > 0 ? Math.round(statsData.todayRevenue / statsData.totalWashCount) : 250000,
-            washBreakdown: {
-              motorbike: statsData.motorbikeCount * 12 || 70,
-              car: statsData.carCount * 12 || 50
-            },
-            serviceRevenueBreakdown: {
-              basicWashPercent: 40,
-              premiumWashPercent: 35,
-              fullDetailPercent: 25
-            },
-            chartData: statsData.revenue7Days || []
-          })
+          // Build fallback customer report from statsData
+          if (!custData) {
+            setCustomerReport({
+              totalCustomers: statsData.newCustomerCount * 10 || 150,
+              newCustomersThisMonth: statsData.newCustomerCount || 15,
+              activeCustomers: Math.round(statsData.newCustomerCount * 7.5) || 110,
+              issuedPoints: statsData.issuedPoints * 5 || 25000,
+              tierDistribution: {
+                memberPercent: 50,
+                silverPercent: 25,
+                goldPercent: 15,
+                platinumPercent: 10
+              },
+              growthChartData: (statsData.revenue7Days || []).map((d: any) => ({
+                date: d.date,
+                newCustomers: Math.round(d.revenue / 500000) || 1
+              }))
+            })
+          }
         }
-
-        // Build fallback customer report from statsData
-        if (!custData) {
-          setCustomerReport({
-            totalCustomers: statsData.newCustomerCount * 10 || 150,
-            newCustomersThisMonth: statsData.newCustomerCount || 15,
-            activeCustomers: Math.round(statsData.newCustomerCount * 7.5) || 110,
-            issuedPoints: statsData.issuedPoints * 5 || 25000,
-            tierDistribution: {
-              memberPercent: 50,
-              silverPercent: 25,
-              goldPercent: 15,
-              platinumPercent: 10
-            },
-            growthChartData: (statsData.revenue7Days || []).map((d: any) => ({
-              date: d.date,
-              newCustomers: Math.round(d.revenue / 500000) || 1
-            }))
-          })
-        }
+      } catch (err) {
+        console.warn('Lỗi khi tải số liệu tổng quan Dashboard fallback:', err)
       }
     } catch (error) {
       console.error('Lỗi tổng hợp báo cáo:', error)

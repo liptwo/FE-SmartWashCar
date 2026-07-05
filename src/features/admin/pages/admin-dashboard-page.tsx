@@ -8,6 +8,7 @@ import { RevenueChart } from '@/features/admin/components/revenue-chart'
 import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
 import { cn } from '@/shared/lib/utils'
+import { authorizeAxios } from '@/shared/lib/api-client'
 
 // Kế thừa icon và các thuộc tính style tĩnh gốc từ dữ liệu mockup của bạn
 import { adminMetrics } from '@/features/admin/data/admin-dashboard'
@@ -22,25 +23,8 @@ export function AdminDashboardPage() {
   const fetchDashboardStats = async (isManualClick = false) => {
     if (isManualClick) setIsRefreshing(true)
     try {
-      const token = localStorage.getItem('jwt_token')
-      const customHeaders: Record<string, string> = {
-        'Content-Type': 'application/json'
-      }
-
-      if (token && token.trim() !== '') {
-        customHeaders['Authorization'] = `Bearer ${token}`
-      }
-
-      const res = await fetch('http://localhost:8080/api/admin/dashboard/stats', {
-        method: 'GET',
-        headers: customHeaders,
-        credentials: 'include'
-      })
-
-      if (res.ok) {
-        const stats = await res.json()
-        setDashboardStats(stats)
-      }
+      const res = await authorizeAxios.get('/admin/dashboard/stats')
+      setDashboardStats(res.data)
     } catch (error) {
       console.error('Lỗi khi tải số liệu tổng quan Dashboard:', error)
     } finally {
