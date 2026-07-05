@@ -78,9 +78,6 @@ export function AppHeader() {
           </>
         ) : (
           <div className="flex items-center gap-4" aria-label="Tác vụ tài khoản">
-            <Button asChild className="hidden sm:inline-flex" size="sm" variant="outline">
-              <Link to={routes.test}>Test routes</Link>
-            </Button>
             <Button aria-label="Trợ giúp" size="icon" type="button" variant="ghost">
               <HelpCircle className="size-5 text-on-surface-variant" />
             </Button>
