@@ -35,6 +35,8 @@ export function AdminBookingsPage() {
   const [dateRangeText, setDateRangeText] = useState<string>(''); 
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const itemsPerPage = 5;
   const [isNewBookingOpen, setIsNewBookingOpen] = useState(false);
   const [newCustName, setNewCustName] = useState('');
@@ -55,11 +57,28 @@ export function AdminBookingsPage() {
     try {
       const apiStatus = selectedStatusFilter === 'Tất cả trạng thái' ? undefined : selectedStatusFilter
       const dateParam = dateRangeText && dateRangeText.trim() !== '' ? dateRangeText : undefined
-      const data = await adminService.getBookings({ status: apiStatus, date: dateParam })
-      setBookings(data as any[])
+      const searchParam = searchText.trim() !== '' ? searchText.trim() : undefined
+      const response = await adminService.getBookings({
+        status: apiStatus,
+        date: dateParam,
+        search: searchParam,
+        page: currentPage - 1,
+        size: itemsPerPage
+      })
+      if (response && response.content) {
+        setBookings(response.content)
+        setTotalPages(response.totalPages || 1)
+        setTotalItems(response.totalElements || response.content.length)
+      } else {
+        setBookings(response as any[] || [])
+        setTotalPages(1)
+        setTotalItems((response as any[])?.length || 0)
+      }
     } catch (error) {
       console.error('Lỗi khi lấy danh sách lịch hẹn:', error)
       setBookings([])
+      setTotalPages(1)
+      setTotalItems(0)
     } finally {
       setLoading(false)
     }
@@ -79,8 +98,15 @@ export function AdminBookingsPage() {
   }, [])
 
   useEffect(() => {
-    fetchBookings()
-  }, [selectedStatusFilter, dateRangeText])
+    setCurrentPage(1)
+  }, [selectedStatusFilter, dateRangeText, searchText])
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchBookings()
+    }, 300)
+    return () => clearTimeout(delayDebounceFn)
+  }, [selectedStatusFilter, dateRangeText, searchText, currentPage])
 
   const onUpdateBookingStatus = async (id: string, newStatus: Booking['status']) => {
     try {
@@ -194,24 +220,11 @@ export function AdminBookingsPage() {
     return { name, plate, type, phone, isPos }
   }
 
-  const filteredBookings = bookings.filter((b) => {
-    const info = getDisplayInfo(b)
-    if (searchText.trim() !== '') {
-      const q = searchText.toLowerCase()
-      const matchCode = b.bookingId.toLowerCase().includes(q)
-      const matchCust = info.name.toLowerCase().includes(q)
-      const matchPlate = info.plate?.toLowerCase().includes(q)
-      if (!matchCode && !matchCust && !matchPlate) return false
-    }
-    return true
-  })
-
   const safeBookings = Array.isArray(bookings) ? bookings : []
   const activeBooking = safeBookings.find((b) => b.bookingId === activeBookingId) || null
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentItems = filteredBookings.slice(indexOfFirstItem, indexOfLastItem)
-  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage) || 1
+  const currentItems = safeBookings
 
   const handleResetFilters = () => {
     setSelectedStatusFilter('Tất cả trạng thái')
@@ -400,7 +413,7 @@ export function AdminBookingsPage() {
 
             <div className='px-5 py-4 flex items-center justify-between border-t border-slate-200 bg-white'>
               <p className='text-[11px] text-slate-400 font-bold uppercase tracking-wider'>
-                Hiển thị {filteredBookings.length > 0 ? indexOfFirstItem + 1 : 0} - {Math.min(indexOfLastItem, filteredBookings.length)} trong số {filteredBookings.length} đơn đặt
+                Hiển thị {bookings.length > 0 ? indexOfFirstItem + 1 : 0} - {indexOfFirstItem + bookings.length} trong số {totalItems} đơn đặt
               </p>
               <div className='flex items-center gap-1'>
                 <button disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} className='p-1.5 rounded-lg border border-slate-200 cursor-pointer'><ChevronLeft className='w-4 h-4' /></button>

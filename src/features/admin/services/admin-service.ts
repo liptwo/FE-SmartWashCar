@@ -330,7 +330,7 @@ export const adminService = {
     return unwrapList(data, ['bookings', 'history']).map(normalizeBooking)
   },
 
-  async getBookings(filters: { status?: string; date?: string } = {}): Promise<AdminBooking[]> {
+  async getBookings(filters: { status?: string; date?: string; search?: string; page?: number; size?: number } = {}): Promise<any> {
     const params: any = {}
     if (filters.status && filters.status !== 'Tất cả trạng thái') {
       params.status = filters.status.toUpperCase()
@@ -338,8 +338,26 @@ export const adminService = {
     if (filters.date) {
       params.date = filters.date
     }
+    if (filters.search) {
+      params.search = filters.search
+    }
+    if (filters.page !== undefined) {
+      params.page = filters.page
+    }
+    if (filters.size !== undefined) {
+      params.size = filters.size
+    }
 
     const { data } = await authorizeAxios.get('/admin/bookings', { params })
+    
+    if (data && data.content) {
+      return {
+        content: data.content.map(normalizeBooking),
+        totalPages: data.totalPages,
+        totalElements: data.totalElements
+      }
+    }
+    
     return unwrapList(data, ['bookings']).map(normalizeBooking)
   },
 

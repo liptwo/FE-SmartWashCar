@@ -34,6 +34,7 @@ export function AdminServicesPage() {
   const [formDesc, setFormDesc] = useState('')
   const [formPrice, setFormPrice] = useState(0)
   const [formDuration, setFormDuration] = useState(30)
+  const [formPoints, setFormPoints] = useState(0)
   const [formActive, setFormActive] = useState(true)
   const [formCombo, setFormCombo] = useState(false)
   const [selectedBundledIds, setSelectedBundledIds] = useState<string[]>([])
@@ -61,6 +62,7 @@ export function AdminServicesPage() {
     setFormDesc('')
     setFormPrice(0)
     setFormDuration(30)
+    setFormPoints(0)
     setFormActive(true)
     setFormCombo(false)
     setSelectedBundledIds([])
@@ -73,6 +75,7 @@ export function AdminServicesPage() {
     setFormDesc(s.description || '')
     setFormPrice(s.basePrice)
     setFormDuration(s.estimatedDuration)
+    setFormPoints(s.points || 0)
     setFormActive(s.active)
     setFormCombo(s.combo)
     
@@ -96,7 +99,7 @@ export function AdminServicesPage() {
       active: formActive,
       combo: formCombo,
       bundledServiceIds: formCombo ? selectedBundledIds.join(',') : '',
-      points: Math.floor(Number(formPrice) / 5000) // Tự động tính điểm theo tỉ lệ giá
+      points: formPoints > 0 ? Number(formPoints) : Math.floor(Number(formPrice) / 5000)
     }
 
     try {
@@ -140,9 +143,11 @@ export function AdminServicesPage() {
     const selectedServices = services.filter(s => nextIds.includes(s.serviceId))
     const sumPrice = selectedServices.reduce((sum, s) => sum + s.basePrice, 0)
     const sumDuration = selectedServices.reduce((sum, s) => sum + s.estimatedDuration, 0)
+    const sumPoints = selectedServices.reduce((sum, s) => sum + (s.points || Math.floor(s.basePrice / 5000)), 0)
 
     setFormPrice(sumPrice)
     setFormDuration(sumDuration)
+    setFormPoints(sumPoints)
   }
 
   const getBundledNames = (bundledIdsStr?: string) => {
@@ -373,25 +378,35 @@ export function AdminServicesPage() {
                       />
                     </div>
 
-                    <div className='grid grid-cols-2 gap-3'>
+                    <div className='grid grid-cols-3 gap-2.5'>
                       <div>
-                        <label className='block text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1'>Giá dịch vụ (VND)</label>
+                        <label className='block text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1'>Giá (VND)</label>
                         <input 
                           type='number' 
                           required
                           value={formPrice} 
                           onChange={(e) => setFormPrice(Number(e.target.value))} 
-                          className='w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-bold focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors' 
+                          className='w-full px-2.5 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-bold focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors' 
                         />
                       </div>
                       <div>
-                        <label className='block text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1'>Thời gian thực hiện (Phút)</label>
+                        <label className='block text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1'>Thời gian (P)</label>
                         <input 
                           type='number' 
                           required
                           value={formDuration} 
                           onChange={(e) => setFormDuration(Number(e.target.value))} 
-                          className='w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-bold focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors' 
+                          className='w-full px-2.5 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-bold focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors' 
+                        />
+                      </div>
+                      <div>
+                        <label className='block text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1'>Điểm thưởng</label>
+                        <input 
+                          type='number' 
+                          value={formPoints} 
+                          onChange={(e) => setFormPoints(Number(e.target.value))} 
+                          className='w-full px-2.5 py-2 border border-slate-200 bg-slate-50 rounded-lg text-xs font-bold focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors' 
+                          placeholder='Tự động'
                         />
                       </div>
                     </div>

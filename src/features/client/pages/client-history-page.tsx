@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Bike, ChevronRight, CalendarX, Car, Clock, X, Receipt, Tag, Percent, Gift } from 'lucide-react'
+import { Bike, ChevronRight, CalendarX, Car, Clock, X, Receipt, Tag, Gift } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import toast from 'react-hot-toast'
 import type { AppDispatch, RootState } from '@/app/store'
