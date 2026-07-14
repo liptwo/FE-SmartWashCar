@@ -86,14 +86,6 @@ export function AppHeader() {
                 <Bell className="size-5 text-on-surface-variant" />
               </Link>
             </Button>
-            <Button
-              aria-label="Hồ sơ"
-              className="size-8 rounded-full border border-outline-variant bg-[linear-gradient(145deg,#edf7f8,#8cb6b2)] p-0 text-xs text-primary hover:bg-[linear-gradient(145deg,#edf7f8,#8cb6b2)]"
-              type="button"
-              variant="outline"
-            >
-              AP
-            </Button>
           </div>
         )}
 

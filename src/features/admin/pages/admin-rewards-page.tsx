@@ -76,7 +76,7 @@ export function AdminRewardsPage() {
       const referenceId = crypto.randomUUID()
       await loyaltyService.redeemPoints({
         customerId: customer.id,
-        redeemType: selectedReward.type,
+        points: selectedReward.cost,
         referenceId: referenceId
       })
       

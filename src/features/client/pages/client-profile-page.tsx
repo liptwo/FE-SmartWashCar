@@ -536,7 +536,7 @@ export function ClientProfilePage() {
                       <button
                         type="submit"
                         disabled={isSaving}
-                        className="flex-1 py-2 bg-primary text-on-primary text-xs font-bold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-indigo-100 cursor-pointer disabled:opacity-50"
+                        className="flex-1 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-indigo-100 cursor-pointer disabled:opacity-50"
                       >
                         {isSaving ? 'Đang lưu...' : 'Lưu thông tin'}
                       </button>

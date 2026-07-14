@@ -8,6 +8,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card' 
 import { cn } from '@/shared/lib/utils'
 import { type Article } from '@/features/articles/data/mock-articles'
+import { authorizeAxios } from '@/shared/lib/api-client'
 
 const filterTabs = ['Tất cả', 'Công khai', 'Bản nháp']
 
@@ -34,32 +35,20 @@ export function AdminArticlesPage() {
   const fetchArticles = async () => {
     setLoading(true)
     try {
-      const url = new URL('http://localhost:8080/api/admin/articles')
-      
+      const params: any = {}
       const statusMap = ['ALL', 'PUBLISHED', 'DRAFT']
       const paramStatus = statusMap[activeTab]
       if (paramStatus && paramStatus !== 'ALL') {
-        url.searchParams.append('status', paramStatus)
+        params.status = paramStatus
       }
 
       if (searchQuery.trim() !== '') {
-        url.searchParams.append('search', searchQuery.trim())
+        params.search = searchQuery.trim()
       }
 
-      const token = localStorage.getItem('jwt_token')
-      const res = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        const sortedData = data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        setArticles(sortedData)
-      }
+      const res = await authorizeAxios.get('/admin/articles', { params })
+      const sortedData = res.data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      setArticles(sortedData)
     } catch (error) {
       console.error('Lỗi nạp dữ liệu bài viết thật:', error)
       toast.error('Không thể tải danh sách bài viết từ server')
@@ -109,7 +98,6 @@ export function AdminArticlesPage() {
       return
     }
 
-    const token = localStorage.getItem('jwt_token')
     const articlePayload = {
       title,
       summary,
@@ -130,45 +118,21 @@ export function AdminArticlesPage() {
         }
 
         // 🔄 LUỒNG CẬP NHẬT (PUT API)
-        const res = await fetch(`http://localhost:8080/api/admin/articles/${targetId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : ''
-          },
-          body: JSON.stringify(articlePayload)
-        })
-
-        if (res.ok) {
-          toast.success('Cập nhật bài viết thành công! 📝')
-          setIsModalOpen(false)
-          fetchArticles() 
-        } else {
-          const errText = await res.text()
-          toast.error(`Lỗi cập nhật: ${errText}`)
-        }
+        await authorizeAxios.put(`/admin/articles/${targetId}`, articlePayload)
+        toast.success('Cập nhật bài viết thành công! 📝')
+        setIsModalOpen(false)
+        fetchArticles() 
       } else {
         // 🚀 LUỒNG TẠO MỚI (POST API)
-        const res = await fetch('http://localhost:8080/api/admin/articles', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : ''
-          },
-          body: JSON.stringify(articlePayload)
-        })
-
-        if (res.ok) {
-          toast.success('Đăng bài viết mới thành công! 🚀')
-          setIsModalOpen(false)
-          fetchArticles()
-        } else {
-          const errText = await res.text()
-          toast.error(`Lỗi từ hệ thống: ${errText}`)
-        }
+        await authorizeAxios.post('/admin/articles', articlePayload)
+        toast.success('Đăng bài viết mới thành công! 🚀')
+        setIsModalOpen(false)
+        fetchArticles()
       }
-    } catch (err) {
-      toast.error('Lỗi kết nối máy chủ!')
+    } catch (err: any) {
+      console.error('Lỗi lưu bài viết:', err)
+      const errMsg = err?.response?.data?.message || err?.message || 'Lỗi lưu bài viết!'
+      toast.error(errMsg)
     }
   }
 
@@ -181,32 +145,19 @@ export function AdminArticlesPage() {
 
     if (window.confirm('Bạn có chắc chắn muốn xóa vĩnh viễn bài viết này không?')) {
       try {
-        const token = localStorage.getItem('jwt_token')
-        const res = await fetch(`http://localhost:8080/api/admin/articles/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : ''
-          }
-        })
-
-        if (res.ok) {
-          setArticles((prev) => prev.filter((art) => art.id !== id))
-          toast.success('Đã xóa bài viết thành công khỏi Database! 🗑️')
-        } else {
-          const errText = await res.text()
-          toast.error(`Không thể xóa bài viết: ${errText}`)
-        }
-      } catch (error) {
+        await authorizeAxios.delete(`/admin/articles/${id}`)
+        setArticles((prev) => prev.filter((art) => art.id !== id))
+        toast.success('Đã xóa bài viết thành công khỏi Database! 🗑️')
+      } catch (error: any) {
         console.error('Lỗi khi gọi API xóa bài viết:', error)
-        toast.error('Lỗi kết nối máy chủ khi thực hiện xóa!')
+        const errMsg = error?.response?.data?.message || error?.message || 'Lỗi khi xóa bài viết!'
+        toast.error(errMsg)
       }
     }
   }
 
   // Luồng lật đổi trạng thái nhanh
   const toggleStatus = async (article: Article) => {
-    const token = localStorage.getItem('jwt_token')
     const nextStatus = article.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
 
     setArticles((prev) =>
@@ -217,19 +168,10 @@ export function AdminArticlesPage() {
     toast.success(`Chuyển trạng thái sang ${nextStatus === 'PUBLISHED' ? 'Công khai' : 'Bản nháp'}`)
 
     try {
-      const res = await fetch(`http://localhost:8080/api/admin/articles/${article.id}/toggle`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
-      })
-      if (!res.ok) {
-        toast.error('Đồng bộ trạng thái thất bại, đang khôi phục dữ liệu...')
-        fetchArticles()
-      }
+      await authorizeAxios.patch(`/admin/articles/${article.id}/toggle`)
     } catch (error) {
       console.error(error)
+      toast.error('Đồng bộ trạng thái thất bại, đang khôi phục dữ liệu...')
       fetchArticles()
     }
   }
@@ -283,7 +225,7 @@ export function AdminArticlesPage() {
               
               <Button
                 onClick={handleOpenCreate}
-                className="flex items-center gap-2 bg-primary text-on-primary shadow-md hover:opacity-90 transition-opacity"
+                className="flex items-center gap-2 bg-primary text-white shadow-md hover:opacity-90 transition-opacity"
               >
                 <Plus size={18} />
                 Tạo bài viết mới
@@ -524,7 +466,7 @@ export function AdminArticlesPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 bg-primary text-on-primary text-xs font-bold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-indigo-100 cursor-pointer"
+                    className="flex-1 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-indigo-100 cursor-pointer"
                   >
                     {editingArticle ? 'Cập nhật bài viết' : 'Đăng bài viết'}
                   </button>

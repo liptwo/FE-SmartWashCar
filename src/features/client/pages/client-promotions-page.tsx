@@ -206,7 +206,7 @@ export default function ClientPromotionsPage() {
                           <Button
                             variant="default"
                             onClick={handleUsePromo}
-                            className="bg-primary text-on-primary hover:bg-info transition-colors"
+                            className="bg-primary text-white hover:bg-info transition-colors"
                           >
                             Dùng ngay
                           </Button>
@@ -279,7 +279,7 @@ export default function ClientPromotionsPage() {
               <Button
                 size="lg"
                 onClick={() => navigate(routes.loyalty)}
-                className="gap-2 px-6 h-11 bg-primary text-on-primary hover:opacity-90 transition-opacity"
+                className="gap-2 px-6 h-11 bg-primary text-white hover:opacity-90 transition-opacity"
               >
                 <Gift size={20} />
                 Xem bảng tích điểm

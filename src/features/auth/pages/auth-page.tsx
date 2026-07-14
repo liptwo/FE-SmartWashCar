@@ -24,7 +24,6 @@ export function AuthPage({ mode }: AuthPageProps) {
   const { navigate } = useRouter()
   const dispatch = useDispatch()
 
-  // Get authentication state from Redux
   const { isLoading, error: reduxError } = useSelector((state: RootState) => state.auth)
 
   // Form states
@@ -35,11 +34,9 @@ export function AuthPage({ mode }: AuthPageProps) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  // Local UI states (messages)
   const [localError, setLocalError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (authStore.isAuthenticated()) {
       const user = authStore.getUser()
